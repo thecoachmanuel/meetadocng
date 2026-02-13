@@ -27,41 +27,41 @@ export default async function AdminLayout({ children }) {
         defaultValue="pending"
         className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
-        <TabsList className="md:col-span-1 bg-muted/30 border h-14 md:h-40 flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-md md:space-y-2 sm:space-x-2 md:space-x-0">
+        <TabsList className="md:col-span-1 bg-muted/30 border h-auto md:h-40 flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-md md:space-y-2 sm:space-x-2 md:space-x-0 overflow-x-auto sm:overflow-x-auto md:overflow-visible whitespace-nowrap scroll-smooth">
           <TabsTrigger
             value="pending"
-            className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full"
+            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
           >
             <AlertCircle className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Pending Verification</span>
           </TabsTrigger>
           <TabsTrigger
             value="doctors"
-            className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full"
+            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
           >
             <Users className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Doctors</span>
           </TabsTrigger>
           <TabsTrigger
             value="payouts"
-            className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full"
+            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
           >
             <CreditCard className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Payouts</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full">
+          <TabsTrigger value="users" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
             <Users className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Users</span>
           </TabsTrigger>
-          <TabsTrigger value="leaderboards" className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full">
+          <TabsTrigger value="leaderboards" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
             <Layout className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Leaderboards</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full">
+          <TabsTrigger value="settings" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
             <Layout className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Site Settings</span>
           </TabsTrigger>
-          <TabsTrigger value="theme" className="flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-full">
+          <TabsTrigger value="theme" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
             <Palette className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Theme</span>
           </TabsTrigger>
