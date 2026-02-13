@@ -3,9 +3,11 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
 import { checkUser } from "@/lib/checkUser";
+import { getSettings } from "@/lib/settings";
 
 export default async function PricingPage() {
-  const user = await checkUser();
+  const [user, settings] = await Promise.all([checkUser(), getSettings()]);
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Header Section */}
@@ -38,7 +40,14 @@ export default async function PricingPage() {
       </div>
 
       {/* Pricing Section */}
-      <Pricing userEmail={user?.email} userId={user?.id} />
+      <Pricing
+        userEmail={user?.email}
+        userId={user?.id}
+        rate={settings.creditToNairaRate}
+        freeCredits={settings.freeCredits}
+        standardCredits={settings.standardCredits}
+        premiumCredits={settings.premiumCredits}
+      />
 
       {/* FAQ Section - Optional */}
       <div className="max-w-3xl mx-auto mt-16 text-center">
