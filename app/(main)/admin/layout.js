@@ -1,7 +1,7 @@
 import { verifyAdmin } from "@/actions/admin";
 import { redirect } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, AlertCircle, Users, CreditCard, Layout, Palette } from "lucide-react";
+import { ShieldCheck, AlertCircle, Users, CreditCard, Layout } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
 export const metadata = {
@@ -60,10 +60,6 @@ export default async function AdminLayout({ children }) {
           <TabsTrigger value="settings" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
             <Layout className="h-4 w-4 mr-2 hidden md:inline" />
             <span>Site Settings</span>
-          </TabsTrigger>
-          <TabsTrigger value="theme" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
-            <Palette className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Theme</span>
           </TabsTrigger>
         </TabsList>
         <div className="md:col-span-3">{children}</div>

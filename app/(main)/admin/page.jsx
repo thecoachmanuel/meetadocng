@@ -8,7 +8,6 @@ import { getSiteSettings } from "@/actions/site-settings";
 import { getNewUsers, getLeaderboards, getAnalytics } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
 import SiteSettingsPanel from "./settings-panel";
-import ThemePanel from "./theme-panel";
 import CreditsConfig from "./credits-config";
 import {
   getPendingDoctors,
@@ -74,10 +73,6 @@ export default async function AdminPage() {
           <SiteSettingsPanel initialSettings={settings || {}} />
           <CreditsConfig initialSettings={settings || {}} />
         </div>
-      </TabsContent>
-
-      <TabsContent value="theme" className="border-none p-0">
-        <ThemePanel initialTheme={(settings?.theme) || "dark"} />
       </TabsContent>
     </>
   );

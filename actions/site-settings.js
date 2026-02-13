@@ -32,7 +32,7 @@ export async function updateSiteSettings(formData) {
   } catch (e) {
     throw new Error("Site settings table not found. Please run database migration.");
   }
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   revalidatePath("/admin");
   return { success: true };
 }
@@ -65,6 +65,6 @@ export async function uploadSiteAsset(formData) {
   } catch (e) {
     throw new Error("Site settings table not found. Please run database migration.");
   }
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true, url: pub.data.publicUrl };
 }
