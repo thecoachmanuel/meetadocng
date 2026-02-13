@@ -25,6 +25,7 @@ import { updateDoctorStatus } from "@/actions/admin";
 import useFetch from "@/hooks/use-fetch";
 import { useEffect } from "react";
 import { BarLoader } from "react-spinners";
+import Image from "next/image";
 
 export function PendingDoctors({ doctors }) {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -202,16 +203,31 @@ export function PendingDoctors({ doctors }) {
                     <h4 className="text-sm font-medium text-muted-foreground">
                       Credentials
                     </h4>
-                    <div className="flex items-center">
-                      <a
-                        href={selectedDoctor.credentialUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-emerald-400 hover:text-emerald-300 flex items-center"
-                      >
-                        View Credentials
-                        <ExternalLink className="h-4 w-4 ml-1" />
-                      </a>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <a
+                          href={selectedDoctor.credentialUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:text-emerald-300 flex items-center font-medium"
+                        >
+                          View Original Document
+                          <ExternalLink className="h-4 w-4 ml-1" />
+                        </a>
+                      </div>
+                      
+                      {/* Image Preview for common image formats */}
+                      {selectedDoctor.credentialUrl && (selectedDoctor.credentialUrl.match(/\.(jpg|jpeg|png|webp|avif|gif)$/i) || selectedDoctor.credentialUrl.includes('cloudinary')) && (
+                        <div className="mt-2 border border-emerald-900/20 rounded-lg overflow-hidden bg-muted/10 relative min-h-[200px]">
+                          <Image 
+                            src={selectedDoctor.credentialUrl} 
+                            alt="Credential Preview" 
+                            fill
+                            className="object-contain"
+                            unoptimized={selectedDoctor.credentialUrl.includes('cloudinary')}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
