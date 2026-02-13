@@ -2,8 +2,8 @@
 
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
-import { uploadFile } from "@/lib/upload";
 
 async function ensure() {
   // Intentionally no-op to avoid crashing when table doesn't exist
@@ -25,27 +25,12 @@ export async function updateSiteSettings(formData) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  const siteTitle = formData.get("siteTitle");
-  const logoUrl = formData.get("logoUrl");
-  const faviconUrl = formData.get("faviconUrl");
-  const heroImageUrl = formData.get("heroImageUrl");
-  const homepageSections = formData.get("homepageSections");
-
+  const settings = Object.fromEntries(formData.entries());
   await ensure();
   try {
-    await db.siteSettings.update({
-      where: { id: "singleton" },
-      data: {
-        siteTitle,
-        logoUrl,
-        faviconUrl,
-        heroImageUrl,
-        homepageSections: homepageSections ? JSON.parse(homepageSections) : undefined,
-      },
-    });
+    await db.siteSettings.update({ where: { id: "singleton" }, data: settings });
   } catch (e) {
-    console.error("Update site settings error:", e);
-    throw new Error("Failed to update site settings. Please check your database connection.");
+    throw new Error("Site settings table not found. Please run database migration.");
   }
   revalidatePath("/", "layout");
   revalidatePath("/admin");
@@ -54,27 +39,32 @@ export async function updateSiteSettings(formData) {
 
 export async function uploadSiteAsset(formData) {
   const supabase = await supabaseServer();
+  const admin = supabaseAdmin();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  const bucket = "site";
+  await admin.storage.createBucket(bucket).catch(() => {});
+
   const file = formData.get("file");
   const target = formData.get("target"); // logoUrl | faviconUrl | heroImageUrl
   if (!file || !target) throw new Error("Invalid upload");
+  const path = `${target}-${Date.now()}-${file.name}`;
 
+  const up = await admin.storage.from(bucket).upload(path, file, { upsert: true });
+  if (up.error) throw new Error(up.error.message);
+  const pub = admin.storage.from(bucket).getPublicUrl(path);
+  await ensure();
   try {
-    const publicUrl = await uploadFile(file, "site", target);
-    
-    await ensure();
     await db.siteSettings.update({
       where: { id: "singleton" },
-      data: { [target]: publicUrl },
+      data: { [target]: pub.data.publicUrl },
     });
-
-    revalidatePath("/", "layout");
-    return { success: true, url: publicUrl };
   } catch (e) {
-    throw new Error(e.message || "Failed to upload site asset");
+    throw new Error("Site settings table not found. Please run database migration.");
   }
+  revalidatePath("/", "layout");
+  return { success: true, url: pub.data.publicUrl };
 }

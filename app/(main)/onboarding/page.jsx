@@ -23,12 +23,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { setUserRole } from "@/actions/onboarding";
-import { uploadCredentialAction } from "@/actions/upload";
 import { doctorFormSchema } from "@/lib/schema";
 import { SPECIALTIES } from "@/lib/specialities";
 import useFetch from "@/hooks/use-fetch";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { supabaseClient } from "@/lib/supabase-client";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState("choose-role");
@@ -37,7 +36,6 @@ export default function OnboardingPage() {
 
   // Custom hook for user role server action
   const { loading, data, fn: submitUserRole } = useFetch(setUserRole);
-  const [uploading, setUploading] = useState(false);
 
   // React Hook Form setup with Zod validation
   const {
@@ -230,47 +228,34 @@ export default function OnboardingPage() {
               />
               <div className="mt-2">
                 <Label htmlFor="credentialFile">Or upload credential file</Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    id="credentialFile"
-                    type="file"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      const fd = new FormData();
-                      fd.append("file", file);
-                      setUploading(true);
-
-                      try {
-                        const res = await uploadCredentialAction(fd);
-                        if (res && res.success) {
-                          setValue("credentialUrl", res.url);
-                          setCredentialFileUrl(res.url);
-                          clearErrors("credentialUrl");
-                          toast.success("Credential uploaded successfully");
-                        }
-                      } catch (err) {
-                        toast.error(err.message || "Failed to upload credential");
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                  />
-                  {uploading && <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />}
-                </div>
-                {credentialFileUrl && (
-                  <p className="text-xs text-emerald-400 mt-1">
-                    File uploaded successfully
-                  </p>
-                )}
+                <Input id="credentialFile" type="file" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const { data } = await supabaseClient.auth.getUser();
+                  const u = data.user;
+                  const path = `${u.id}/credential-${Date.now()}-${file.name}`;
+                  try {
+                    await ensureBucket("credentials");
+                    const up = await supabaseClient.storage.from("credentials").upload(path, file, { upsert: true });
+                    if (up.error) {
+                      return;
+                    }
+                    const pub = supabaseClient.storage.from("credentials").getPublicUrl(path);
+                    setValue("credentialUrl", pub.data.publicUrl);
+                    setCredentialFileUrl(pub.data.publicUrl);
+                    clearErrors("credentialUrl");
+                    toast.success("Credential uploaded");
+                  } catch {}
+                }} />
               </div>
               {errors.credentialUrl && (
                 <p className="text-sm font-medium text-red-500 mt-1">
                   {errors.credentialUrl.message}
                 </p>
               )}
+              <p className="text-sm text-muted-foreground">
+                Provide a credential link or upload your credential file
+              </p>
             </div>
 
             <div className="space-y-2">
