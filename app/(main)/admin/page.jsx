@@ -54,18 +54,14 @@ export default async function AdminPage() {
       </TabsContent>
 
       <TabsContent value="users" className="border-none p-0">
-        <NewUsers users={usersData.users || []} />
-      </TabsContent>
-
-      <TabsContent value="leaderboards" className="border-none p-0">
-        <Leaderboards patients={leadersData.patients || []} doctors={leadersData.doctors || []} />
-      </TabsContent>
-
-      <TabsContent value="users" className="border-none p-0">
         <div className="space-y-6">
           <NewUsers users={usersData.users || []} />
           <AnalyticsPanel stats={analytics || {}} />
         </div>
+      </TabsContent>
+
+      <TabsContent value="leaderboards" className="border-none p-0">
+        <Leaderboards patients={leadersData.patients || []} doctors={leadersData.doctors || []} />
       </TabsContent>
 
       <TabsContent value="settings" className="border-none p-0">

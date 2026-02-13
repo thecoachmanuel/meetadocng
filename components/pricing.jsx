@@ -5,9 +5,12 @@ import { Card, CardContent } from "./ui/card";
 import Script from "next/script";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { purchaseCredits } from "@/actions/credits";
+import { useRouter } from "next/navigation";
 
 const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 24 }) => {
   const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+  const router = useRouter();
 
   const startPayment = async (plan) => {
     if (!userId || !userEmail) {
@@ -29,7 +32,18 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
         plan: plan.id,
       },
       callback: async (response) => {
-        toast.success("Payment successful. Credits will be added shortly.");
+        toast.info("Verifying payment...");
+        try {
+          const result = await purchaseCredits(userId, plan.id);
+          if (result.success) {
+            toast.success("Payment successful! Credits added to your account.");
+            router.refresh();
+          } else {
+            toast.error(result.error || "Failed to add credits. Please contact support.");
+          }
+        } catch (error) {
+          toast.error("An error occurred. Please contact support.");
+        }
       },
       onClose: () => {
         toast.info("Payment window closed");

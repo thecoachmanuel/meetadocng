@@ -25,6 +25,8 @@ export function SlotPicker({ days, onSelectSlot }) {
     }
   };
 
+  const isSlotSelected = (slot) => selectedSlot?.startTime === slot.startTime;
+
   return (
     <div className="space-y-6">
       <Tabs
@@ -73,7 +75,7 @@ export function SlotPicker({ days, onSelectSlot }) {
                     <Card
                       key={slot.startTime}
                       className={`border-emerald-900/20 cursor-pointer transition-all ${
-                        selectedSlot?.startTime === slot.startTime
+                        isSlotSelected(slot)
                           ? "bg-emerald-900/30 border-emerald-600"
                           : "hover:border-emerald-700/40"
                       }`}
@@ -82,19 +84,19 @@ export function SlotPicker({ days, onSelectSlot }) {
                       <CardContent className="p-3 flex items-center">
                         <Clock
                           className={`h-4 w-4 mr-2 ${
-                            selectedSlot?.startTime === slot.startTime
+                            isSlotSelected(slot)
                               ? "text-emerald-400"
                               : "text-muted-foreground"
                           }`}
                         />
                         <span
                           className={
-                            selectedSlot?.startTime === slot.startTime
+                            isSlotSelected(slot)
                               ? "text-white"
                               : "text-muted-foreground"
                           }
                         >
-                          {format(new Date(slot.startTime), "h:mm a")}
+                          {slot.formatted}
                         </span>
                       </CardContent>
                     </Card>
@@ -106,13 +108,13 @@ export function SlotPicker({ days, onSelectSlot }) {
         ))}
       </Tabs>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-4 border-t border-emerald-900/20">
         <Button
           onClick={confirmSelection}
           disabled={!selectedSlot}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
-          Continue
+          Confirm Selection
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
