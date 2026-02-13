@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { changePassword } from "@/actions/profile";
+import Image from "next/image";
 
 export default function AccountPage() {
   const [fullName, setFullName] = useState("");
@@ -96,7 +97,7 @@ export default function AccountPage() {
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
                       {avatarUrl ? (
-                        <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                        <Image src={avatarUrl} alt="avatar" width={64} height={64} className="w-full h-full object-cover" unoptimized />
                       ) : (
                         <div className="w-full h-full" />
                       )}

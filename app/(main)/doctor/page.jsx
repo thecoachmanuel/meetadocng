@@ -26,14 +26,23 @@ export default async function DoctorDashboardPage() {
     redirect("/doctor/verification");
   }
 
-  const [appointmentsData, availabilityData, earningsData, payoutsData, settings] =
-    await Promise.all([
-      getDoctorAppointments(),
-      getDoctorAvailability(),
-      getDoctorEarnings(),
-      getDoctorPayouts(),
-      getSettings(),
-    ]);
+  const results = await Promise.allSettled([
+    getDoctorAppointments(),
+    getDoctorAvailability(),
+    getDoctorEarnings(),
+    getDoctorPayouts(),
+    getSettings(),
+  ]);
+
+  const appointmentsData =
+    results[0].status === "fulfilled" ? results[0].value : { appointments: [] };
+  const availabilityData =
+    results[1].status === "fulfilled" ? results[1].value : { slots: [] };
+  const earningsData =
+    results[2].status === "fulfilled" ? results[2].value : { earnings: {} };
+  const payoutsData =
+    results[3].status === "fulfilled" ? results[3].value : { payouts: [] };
+  const settings = results[4].status === "fulfilled" ? results[4].value : null;
 
   return (
     <Tabs

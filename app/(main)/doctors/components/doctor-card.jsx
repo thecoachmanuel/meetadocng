@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 
 export function DoctorCard({ doctor }) {
   return (
@@ -11,10 +12,13 @@ export function DoctorCard({ doctor }) {
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-full bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
             {doctor.imageUrl ? (
-              <img
+              <Image
                 src={doctor.imageUrl}
                 alt={doctor.name}
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full object-cover"
+                unoptimized
               />
             ) : (
               <User className="h-6 w-6 text-emerald-400" />

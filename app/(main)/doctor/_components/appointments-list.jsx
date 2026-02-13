@@ -16,7 +16,7 @@ export default function DoctorAppointmentsList() {
 
   useEffect(() => {
     fetchAppointments();
-  }, []);
+  }, [fetchAppointments]);
 
   const appointments = data?.appointments || [];
 

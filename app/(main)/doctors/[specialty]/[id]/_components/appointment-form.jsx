@@ -41,7 +41,7 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate 
         onComplete();
       }
     }
-  }, [data]);
+  }, [data, onComplete]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

@@ -24,7 +24,7 @@ export default async function RootLayout({ children }) {
       <head>
         <link rel="icon" href={s.faviconUrl || "/logo.png"} sizes="any" />
       </head>
-      <body className={`${inter.className}`}>
+      <body className={`${inter.className} min-h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme={s.theme || "dark"}
@@ -32,10 +32,10 @@ export default async function RootLayout({ children }) {
           disableTransitionOnChange
         >
           <Header />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pb-28">{children}</main>
           <Toaster richColors />
 
-          <footer className="bg-muted/50 py-12">
+          <footer className="bg-muted/50 py-12 fixed bottom-0 left-0 right-0">
             <div className="container mx-auto px-4 text-center text-gray-200">
               <p>{copyright}</p>
             </div>

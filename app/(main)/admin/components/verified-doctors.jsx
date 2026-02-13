@@ -62,7 +62,7 @@ export function VerifiedDoctors({ doctors }) {
       setTargetDoctor(null);
       setActionType(null);
     }
-  }, [data]);
+  }, [actionType, data, targetDoctor]);
 
   return (
     <div>
