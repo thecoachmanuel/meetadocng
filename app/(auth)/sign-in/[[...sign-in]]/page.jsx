@@ -59,8 +59,9 @@ export default function Page() {
   };
 
   return (
-    <Card className="border-emerald-900/30 w-full max-w-md mx-auto">
-      <CardContent className="p-6 space-y-6">
+    <div className="container mx-auto px-4 pt-12 pb-24 flex justify-center">
+      <Card className="border-emerald-900/30 w-full max-w-md">
+        <CardContent className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Sign In</h1>
           <p className="text-muted-foreground">Access your account</p>
@@ -115,6 +116,7 @@ export default function Page() {
           Google
         </Button>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

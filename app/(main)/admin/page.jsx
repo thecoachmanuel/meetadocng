@@ -17,17 +17,28 @@ import {
 } from "@/actions/admin";
 
 export default async function AdminPage() {
-  // Fetch all data in parallel
-  const [pendingDoctorsData, verifiedDoctorsData, pendingPayoutsData, usersData, leadersData, settings, analytics] =
-    await Promise.all([
-      getPendingDoctors(),
-      getVerifiedDoctors(),
-      getPendingPayouts(),
-      getNewUsers(),
-      getLeaderboards(),
-      getSiteSettings(),
-      getAnalytics(),
-    ]);
+  const results = await Promise.allSettled([
+    getPendingDoctors(),
+    getVerifiedDoctors(),
+    getPendingPayouts(),
+    getNewUsers(),
+    getLeaderboards(),
+    getSiteSettings(),
+    getAnalytics(),
+  ]);
+
+  const pendingDoctorsData =
+    results[0].status === "fulfilled" ? results[0].value : { doctors: [] };
+  const verifiedDoctorsData =
+    results[1].status === "fulfilled" ? results[1].value : { doctors: [] };
+  const pendingPayoutsData =
+    results[2].status === "fulfilled" ? results[2].value : { payouts: [] };
+  const usersData =
+    results[3].status === "fulfilled" ? results[3].value : { users: [] };
+  const leadersData =
+    results[4].status === "fulfilled" ? results[4].value : { patients: [], doctors: [] };
+  const settings = results[5].status === "fulfilled" ? results[5].value : null;
+  const analytics = results[6].status === "fulfilled" ? results[6].value : {};
 
   return (
     <>
