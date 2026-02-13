@@ -12,17 +12,18 @@ const protectedMatchers = [
 
 export default async function proxy(req) {
   const res = NextResponse.next();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get: (name) => req.cookies.get(name)?.value,
-        set: (name, value, options) => res.cookies.set(name, value, options),
-        remove: (name, options) => res.cookies.set(name, "", { ...options, maxAge: 0 }),
-      },
-    }
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return res;
+  }
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get: (name) => req.cookies.get(name)?.value,
+      set: (name, value, options) => res.cookies.set(name, value, options),
+      remove: (name, options) => res.cookies.set(name, "", { ...options, maxAge: 0 }),
+    },
+  });
 
   const {
     data: { session },
