@@ -34,10 +34,12 @@ export async function requestPayout(formData) {
       throw new Error("Doctor not found");
     }
 
-    const paypalEmail = formData.get("paypalEmail");
+    const bankName = formData.get("bankName");
+    const accountName = formData.get("accountName");
+    const accountNumber = formData.get("accountNumber");
 
-    if (!paypalEmail) {
-      throw new Error("PayPal email is required");
+    if (!bankName || !accountName || !accountNumber) {
+      throw new Error("Bank name, account name, and account number are required");
     }
 
     // Check if doctor has any pending payout requests
@@ -78,7 +80,9 @@ export async function requestPayout(formData) {
         credits: creditCount,
         platformFee,
         netAmount,
-        paypalEmail,
+        bankName,
+        accountName,
+        accountNumber,
         status: "PROCESSING",
       },
     });

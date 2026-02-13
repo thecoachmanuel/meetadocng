@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { approvePayout } from "@/actions/admin";
+import { formatNaira } from "@/lib/currency";
 import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 import { BarLoader } from "react-spinners";
@@ -115,14 +116,13 @@ export function PendingPayouts({ payouts }) {
                             <div className="flex items-center">
                               <DollarSign className="h-4 w-4 mr-1 text-emerald-400" />
                               <span>
-                                {payout.credits} credits • $
-                                {payout.netAmount.toFixed(2)}
+                                {payout.credits} credits • {formatNaira(payout.netAmount)}
                               </span>
                             </div>
                             <div className="flex items-center">
                               <Mail className="h-4 w-4 mr-1 text-emerald-400" />
                               <span className="text-xs">
-                                {payout.paypalEmail}
+                                {payout.bankName} • {payout.accountName} • {payout.accountNumber}
                               </span>
                             </div>
                           </div>
@@ -240,32 +240,22 @@ export function PendingPayouts({ payouts }) {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Gross amount (10 USD/credit):
-                    </span>
-                    <span className="text-white">
-                      ${selectedPayout.amount.toFixed(2)}
-                    </span>
+                    <span className="text-muted-foreground">Gross amount:</span>
+                    <span className="text-white">{formatNaira(selectedPayout.amount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Platform fee (2 USD/credit):
-                    </span>
-                    <span className="text-white">
-                      -${selectedPayout.platformFee.toFixed(2)}
-                    </span>
+                    <span className="text-muted-foreground">Platform fee:</span>
+                    <span className="text-white">{formatNaira(selectedPayout.platformFee)}</span>
                   </div>
                   <div className="border-t border-emerald-900/20 pt-3 flex justify-between font-medium">
                     <span className="text-white">Net payout:</span>
-                    <span className="text-emerald-400">
-                      ${selectedPayout.netAmount.toFixed(2)}
-                    </span>
+                    <span className="text-emerald-400">{formatNaira(selectedPayout.netAmount)}</span>
                   </div>
                   <div className="border-t border-emerald-900/20 pt-3">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      PayPal Email
+                    <p className="text-sm font-medium text-muted-foreground">Bank Details</p>
+                    <p className="text-white text-sm">
+                      {selectedPayout.bankName} • {selectedPayout.accountName} • {selectedPayout.accountNumber}
                     </p>
-                    <p className="text-white">{selectedPayout.paypalEmail}</p>
                   </div>
                 </div>
               </div>
@@ -348,15 +338,11 @@ export function PendingPayouts({ payouts }) {
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-muted-foreground">Amount to pay:</span>
-                  <span className="text-emerald-400 font-medium">
-                    ${selectedPayout.netAmount.toFixed(2)}
-                  </span>
+                  <span className="text-emerald-400 font-medium">{formatNaira(selectedPayout.netAmount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">PayPal:</span>
-                  <span className="text-white text-sm">
-                    {selectedPayout.paypalEmail}
-                  </span>
+                  <span className="text-muted-foreground">Bank:</span>
+                  <span className="text-white text-sm">{selectedPayout.bankName} • {selectedPayout.accountName} • {selectedPayout.accountNumber}</span>
                 </div>
               </div>
             </div>

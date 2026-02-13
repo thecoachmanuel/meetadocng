@@ -10,7 +10,9 @@ import { bookAppointment } from "@/actions/appointments";
 import { toast } from "sonner";
 import useFetch from "@/hooks/use-fetch";
 
-export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
+import { formatNaira } from "@/lib/currency";
+
+export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate = 1000, appointmentCreditCost = 2 }) {
   const [description, setDescription] = useState("");
 
   // Use the useFetch hook to handle loading, data, and error states
@@ -54,11 +56,12 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
           <Clock className="h-5 w-5 text-emerald-400 mr-2" />
           <span className="text-white">{slot.formatted}</span>
         </div>
-        <div className="flex items-center">
-          <CreditCard className="h-5 w-5 text-emerald-400 mr-2" />
-          <span className="text-muted-foreground">
-            Cost: <span className="text-white font-medium">2 credits</span>
-          </span>
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-emerald-400" />
+          <span className="text-muted-foreground">Cost:</span>
+          <span className="text-white font-medium">{appointmentCreditCost} credits</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-white font-medium">{formatNaira(appointmentCreditCost * nairaRate)}</span>
         </div>
       </div>
 

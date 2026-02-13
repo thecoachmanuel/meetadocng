@@ -28,7 +28,7 @@ import { SlotPicker } from "./slot-picker";
 import { AppointmentForm } from "./appointment-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export function DoctorProfile({ doctor, availableDays }) {
+export function DoctorProfile({ doctor, availableDays, nairaRate = 1000, appointmentCreditCost = 2 }) {
   const [showBooking, setShowBooking] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const router = useRouter();
@@ -202,6 +202,8 @@ export function DoctorProfile({ doctor, availableDays }) {
                         slot={selectedSlot}
                         onBack={() => setSelectedSlot(null)}
                         onComplete={handleBookingComplete}
+                        nairaRate={nairaRate}
+                        appointmentCreditCost={appointmentCreditCost}
                       />
                     )}
                   </>

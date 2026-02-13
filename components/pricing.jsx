@@ -6,13 +6,7 @@ import Script from "next/script";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 
-const plans = [
-  { id: "free_user", name: "Free", price: 0, credits: 0 },
-  { id: "standard", name: "Standard", price: 5000, credits: 10 },
-  { id: "premium", name: "Premium", price: 12000, credits: 24 },
-];
-
-const Pricing = ({ userEmail, userId }) => {
+const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 24 }) => {
   const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
   const startPayment = async (plan) => {
@@ -45,6 +39,12 @@ const Pricing = ({ userEmail, userId }) => {
     handler.openIframe();
   };
 
+  const plans = [
+    { id: "free_user", name: "Free", price: 0, credits: freeCredits },
+    { id: "standard", name: "Standard", price: standardCredits * rate, credits: standardCredits },
+    { id: "premium", name: "Premium", price: premiumCredits * rate, credits: premiumCredits },
+  ];
+
   return (
     <>
       <Script src="https://js.paystack.co/v1/inline.js" />
@@ -56,7 +56,7 @@ const Pricing = ({ userEmail, userId }) => {
                 <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
                 <p className="text-muted-foreground mb-4">{plan.credits} credits</p>
                 <div className="text-3xl font-bold text-emerald-400 mb-6">
-                  {plan.price === 0 ? "Free" : `₦${plan.price.toLocaleString()}`}
+                  {plan.price === 0 ? "Free" : `₦${Math.round(plan.price).toLocaleString()}`}
                 </div>
                 {plan.price === 0 ? (
                   <Button disabled variant="outline">Included</Button>

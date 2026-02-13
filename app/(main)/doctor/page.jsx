@@ -6,17 +6,19 @@ import { redirect } from "next/navigation";
 import { Calendar, Clock, DollarSign } from "lucide-react";
 import DoctorAppointmentsList from "./_components/appointments-list";
 import { getDoctorEarnings, getDoctorPayouts } from "@/actions/payout";
+import { getSettings } from "@/lib/settings";
 import { DoctorEarnings } from "./_components/doctor-earnings";
 
 export default async function DoctorDashboardPage() {
   const user = await getCurrentUser();
 
-  const [appointmentsData, availabilityData, earningsData, payoutsData] =
+  const [appointmentsData, availabilityData, earningsData, payoutsData, settings] =
     await Promise.all([
       getDoctorAppointments(),
       getDoctorAvailability(),
       getDoctorEarnings(),
       getDoctorPayouts(),
+      getSettings(),
     ]);
 
   //   // Redirect if not a doctor
@@ -70,6 +72,8 @@ export default async function DoctorDashboardPage() {
           <DoctorEarnings
             earnings={earningsData.earnings || {}}
             payouts={payoutsData.payouts || []}
+            nairaRate={settings?.creditToNairaRate || 1000}
+            perCreditEarning={settings?.doctorEarningPerCredit || 8}
           />
         </TabsContent>
       </div>

@@ -121,7 +121,10 @@ model Payout {
   credits         Int           // Number of credits being paid out
   platformFee     Float         // Platform fee deducted (2 USD per credit)
   netAmount       Float         // Amount doctor receives (8 USD per credit)
-  paypalEmail     String        // Doctor's PayPal email for payout
+  paypalEmail     String?       // Deprecated: Doctor's PayPal email for payout
+  bankName        String?       // Doctor's bank name
+  accountName     String?       // Doctor's account name
+  accountNumber   String?       // Doctor's account number
   status          PayoutStatus  @default(PROCESSING)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
