@@ -32,9 +32,12 @@ export default function SiteSettingsPanel({ initialSettings }) {
   const [sectionTitle, setSectionTitle] = useState("");
   const [sectionDesc, setSectionDesc] = useState("");
 
+  const [loading, setLoading] = useState(false);
+
   const onUpload = async (e, target) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLoading(true);
     const fd = new FormData();
     fd.append("file", file);
     fd.append("target", target);
@@ -43,14 +46,17 @@ export default function SiteSettingsPanel({ initialSettings }) {
       if (target === "logoUrl") setLogoUrl(res.url);
       if (target === "faviconUrl") setFaviconUrl(res.url);
       if (target === "heroImageUrl") setHeroImageUrl(res.url);
-      toast.success("Uploaded");
+      toast.success("Uploaded successfully");
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const onSave = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const fd = new FormData();
     fd.append("siteTitle", siteTitle);
     fd.append("logoUrl", logoUrl);
@@ -75,9 +81,11 @@ export default function SiteSettingsPanel({ initialSettings }) {
     );
     try {
       await updateSiteSettings(fd);
-      toast.success("Settings saved");
+      toast.success("Settings saved and site updated");
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,21 +104,21 @@ export default function SiteSettingsPanel({ initialSettings }) {
             <Label>Logo</Label>
             <div className="flex items-center gap-4">
               <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="Logo URL" />
-              <Input type="file" accept="image/*" onChange={(e) => onUpload(e, "logoUrl")} />
+              <Input type="file" accept="image/*" disabled={loading} onChange={(e) => onUpload(e, "logoUrl")} />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Favicon</Label>
             <div className="flex items-center gap-4">
               <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="Favicon URL" />
-              <Input type="file" accept="image/*" onChange={(e) => onUpload(e, "faviconUrl")} />
+              <Input type="file" accept="image/*" disabled={loading} onChange={(e) => onUpload(e, "faviconUrl")} />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Hero Image</Label>
             <div className="flex items-center gap-4">
               <Input value={heroImageUrl} onChange={(e) => setHeroImageUrl(e.target.value)} placeholder="Hero URL" />
-              <Input type="file" accept="image/*" onChange={(e) => onUpload(e, "heroImageUrl")} />
+              <Input type="file" accept="image/*" disabled={loading} onChange={(e) => onUpload(e, "heroImageUrl")} />
             </div>
           </div>
 
@@ -163,7 +171,9 @@ export default function SiteSettingsPanel({ initialSettings }) {
             <Label>Footer Copyright</Label>
             <Input value={footerCopyright} onChange={(e) => setFooterCopyright(e.target.value)} placeholder="© 2026 Company. All rights reserved." />
           </div>
-          <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Save</Button>
+          <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
+            {loading ? "Saving..." : "Save Settings"}
+          </Button>
         </form>
       </CardContent>
     </Card>

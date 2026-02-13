@@ -25,12 +25,27 @@ export async function updateSiteSettings(formData) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  const settings = Object.fromEntries(formData.entries());
+  const siteTitle = formData.get("siteTitle");
+  const logoUrl = formData.get("logoUrl");
+  const faviconUrl = formData.get("faviconUrl");
+  const heroImageUrl = formData.get("heroImageUrl");
+  const homepageSections = formData.get("homepageSections");
+
   await ensure();
   try {
-    await db.siteSettings.update({ where: { id: "singleton" }, data: settings });
+    await db.siteSettings.update({
+      where: { id: "singleton" },
+      data: {
+        siteTitle,
+        logoUrl,
+        faviconUrl,
+        heroImageUrl,
+        homepageSections: homepageSections ? JSON.parse(homepageSections) : undefined,
+      },
+    });
   } catch (e) {
-    throw new Error("Site settings table not found. Please run database migration.");
+    console.error("Update site settings error:", e);
+    throw new Error("Failed to update site settings. Please check your database connection.");
   }
   revalidatePath("/", "layout");
   revalidatePath("/admin");
