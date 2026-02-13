@@ -27,9 +27,11 @@ import { doctorFormSchema } from "@/lib/schema";
 import { SPECIALTIES } from "@/lib/specialities";
 import useFetch from "@/hooks/use-fetch";
 import { useEffect } from "react";
+import { supabaseClient } from "@/lib/supabase-client";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState("choose-role");
+  const [credentialFileUrl, setCredentialFileUrl] = useState("");
   const router = useRouter();
 
   // Custom hook for user role server action
@@ -41,6 +43,8 @@ export default function OnboardingPage() {
     handleSubmit,
     formState: { errors },
     setValue,
+    setError,
+    clearErrors,
     control,
   } = useForm({
     resolver: zodResolver(doctorFormSchema),
@@ -74,6 +78,14 @@ export default function OnboardingPage() {
   // Added missing onDoctorSubmit function
   const onDoctorSubmit = async (data) => {
     if (loading) return;
+
+    if (!data.credentialUrl && !credentialFileUrl) {
+      setError("credentialUrl", {
+        type: "manual",
+        message: "Upload your credential or provide a credential link",
+      });
+      return;
+    }
 
     const formData = new FormData();
     formData.append("role", "DOCTOR");
@@ -230,6 +242,8 @@ export default function OnboardingPage() {
                     }
                     const pub = supabaseClient.storage.from("credentials").getPublicUrl(path);
                     setValue("credentialUrl", pub.data.publicUrl);
+                    setCredentialFileUrl(pub.data.publicUrl);
+                    clearErrors("credentialUrl");
                     toast.success("Credential uploaded");
                   } catch {}
                 }} />
@@ -240,7 +254,7 @@ export default function OnboardingPage() {
                 </p>
               )}
               <p className="text-sm text-muted-foreground">
-                Please provide a link to your medical degree or certification
+                Provide a credential link or upload your credential file
               </p>
             </div>
 

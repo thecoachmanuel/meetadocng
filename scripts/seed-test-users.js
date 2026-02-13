@@ -5,6 +5,7 @@ const { PrismaClient } = require("@prisma/client");
 
 function loadEnv() {
   const envPath = path.join(__dirname, "..", ".env");
+  if (!envPath || typeof envPath !== "string") return;
   if (!fs.existsSync(envPath)) return;
   const content = fs.readFileSync(envPath, "utf8");
   for (const line of content.split(/\r?\n/)) {
@@ -117,4 +118,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

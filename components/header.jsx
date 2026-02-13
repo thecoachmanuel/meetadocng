@@ -13,7 +13,7 @@ import { checkUser } from "@/lib/checkUser";
 import { Badge } from "./ui/badge";
 import { checkAndAllocateCredits } from "@/actions/credits";
 import Image from "next/image";
-import { Avatar } from "@/components/ui/avatar";
+import AvatarToggleLink from "@/components/avatar-toggle-link";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getSettings } from "@/lib/settings";
 
@@ -139,13 +139,12 @@ export default async function Header() {
 
           {user && (
             <>
-              <Link href="/account" className="ml-2">
-                <Avatar
-                  src={user.imageUrl || ""}
-                  alt={user.name || "Account"}
-                  size={36}
-                />
-              </Link>
+              <AvatarToggleLink
+                src={user.imageUrl || ""}
+                alt={user.name || "Account"}
+                size={36}
+                className="ml-2"
+              />
               <SignOutButton />
             </>
           )}
