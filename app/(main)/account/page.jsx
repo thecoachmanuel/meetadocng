@@ -1,0 +1,151 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabaseClient } from "@/lib/supabase-client";
+import { ensureBucket } from "@/actions/storage";
+import { updateProfile, deleteAvatar } from "@/actions/profile";
+import useFetch from "@/hooks/use-fetch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { changePassword } from "@/actions/profile";
+
+export default function AccountPage() {
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const { fn: createBucket } = useFetch(ensureBucket);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabaseClient.auth.getUser();
+      const u = data.user;
+      if (!u) return;
+      setFullName(u.user_metadata?.full_name || "");
+      setAvatarUrl(u.user_metadata?.avatar_url || "");
+    };
+    load();
+  }, []);
+
+  const onSave = async (e) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append("fullName", fullName);
+    if (avatarUrl) fd.append("avatarUrl", avatarUrl);
+    await updateProfile(fd);
+    toast.success("Account updated");
+  };
+
+  const onAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    await createBucket("avatars");
+    const { data } = await supabaseClient.auth.getUser();
+    const u = data.user;
+    const path = `${u.id}/avatar-${Date.now()}-${file.name}`;
+    const up = await supabaseClient.storage.from("avatars").upload(path, file, { upsert: true });
+    if (up.error) {
+      toast.error(up.error.message);
+      setLoading(false);
+      return;
+    }
+    const pub = supabaseClient.storage.from("avatars").getPublicUrl(path);
+    setAvatarUrl(pub.data.publicUrl);
+    const fd = new FormData();
+    fd.append("avatarUrl", pub.data.publicUrl);
+    await updateProfile(fd);
+    setLoading(false);
+    toast.success("Avatar updated");
+  };
+
+  const onDeleteAvatar = async () => {
+    setLoading(true);
+    await deleteAvatar();
+    setAvatarUrl("");
+    setLoading(false);
+    toast.success("Avatar deleted");
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <Tabs defaultValue="profile">
+        <TabsList className="bg-muted/30 border h-14 w-full p-2 rounded-md">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="mt-6">
+          <Card className="bg-muted/20 border-emerald-900/20">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white">My Account</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <form onSubmit={onSave} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Profile Picture</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full" />
+                      )}
+                    </div>
+                    <Input type="file" accept="image/*" onChange={onAvatarChange} disabled={loading} />
+                    <Button type="button" variant="outline" onClick={onDeleteAvatar} disabled={loading} className="border-emerald-900/30">Delete</Button>
+                  </div>
+                </div>
+
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={loading}>Save Changes</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="mt-6">
+          <Card className="bg-muted/20 border-emerald-900/20">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white">Security</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  try {
+                    await changePassword(fd);
+                    e.currentTarget.reset();
+                    toast.success("Password updated");
+                  } catch (err) {
+                    toast.error(err.message);
+                  }
+                }}
+                className="space-y-6"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input id="newPassword" name="newPassword" type="password" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input id="confirmPassword" name="confirmPassword" type="password" required />
+                </div>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Change Password</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
