@@ -44,10 +44,14 @@ export default function Page() {
 
   const signInGoogle = async () => {
     setLoading(true);
+    const siteUrl =
+      typeof window !== "undefined"
+        ? process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+        : undefined;
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
+        redirectTo: siteUrl ? `${siteUrl}/auth/callback` : undefined,
       },
     });
     setLoading(false);

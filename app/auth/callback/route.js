@@ -5,7 +5,8 @@ import { db } from "@/lib/prisma";
 export async function GET(req) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const res = NextResponse.redirect(new URL("/", req.url));
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || url.origin;
+  const res = NextResponse.redirect(new URL("/", siteUrl));
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -54,6 +55,6 @@ export async function GET(req) {
     UNASSIGNED: "/onboarding",
   };
   const target = redirectMap[role] || "/";
-  res.headers.set("Location", new URL(target, req.url).toString());
+  res.headers.set("Location", new URL(target, siteUrl).toString());
   return res;
 }
