@@ -13,7 +13,22 @@ export default function SiteSettingsPanel({ initialSettings }) {
   const [logoUrl, setLogoUrl] = useState(initialSettings.logoUrl || "");
   const [faviconUrl, setFaviconUrl] = useState(initialSettings.faviconUrl || "");
   const [heroImageUrl, setHeroImageUrl] = useState(initialSettings.heroImageUrl || "");
-  const [sections, setSections] = useState(initialSettings.homepageSections || []);
+  const hs = initialSettings.homepageSections || {};
+  const [sections, setSections] = useState(Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : []);
+  const [heroBadge, setHeroBadge] = useState(hs?.hero?.badge || "Healthcare made simple");
+  const [heroTitleLine1, setHeroTitleLine1] = useState(hs?.hero?.titleLine1 || "Connect with doctors");
+  const [heroTitleHighlightLine2, setHeroTitleHighlightLine2] = useState(hs?.hero?.titleHighlightLine2 || "anytime, anywhere");
+  const [heroDescription, setHeroDescription] = useState(
+    hs?.hero?.description ||
+      "Book appointments, consult via video, and manage your healthcare journey all in one secure platform."
+  );
+  const [heroPrimaryCtaText, setHeroPrimaryCtaText] = useState(hs?.hero?.primaryCtaText || "Get Started");
+  const [heroPrimaryCtaLink, setHeroPrimaryCtaLink] = useState(hs?.hero?.primaryCtaLink || "/onboarding");
+  const [heroSecondaryCtaText, setHeroSecondaryCtaText] = useState(hs?.hero?.secondaryCtaText || "Find Doctors");
+  const [heroSecondaryCtaLink, setHeroSecondaryCtaLink] = useState(hs?.hero?.secondaryCtaLink || "/doctors");
+  const [footerCopyright, setFooterCopyright] = useState(
+    hs?.footerCopyright || `© ${new Date().getFullYear()} MeetADoc. All rights reserved.`
+  );
   const [sectionTitle, setSectionTitle] = useState("");
   const [sectionDesc, setSectionDesc] = useState("");
 
@@ -41,7 +56,23 @@ export default function SiteSettingsPanel({ initialSettings }) {
     fd.append("logoUrl", logoUrl);
     fd.append("faviconUrl", faviconUrl);
     fd.append("heroImageUrl", heroImageUrl);
-    fd.append("homepageSections", JSON.stringify(sections || []));
+    fd.append(
+      "homepageSections",
+      JSON.stringify({
+        hero: {
+          badge: heroBadge,
+          titleLine1: heroTitleLine1,
+          titleHighlightLine2: heroTitleHighlightLine2,
+          description: heroDescription,
+          primaryCtaText: heroPrimaryCtaText,
+          primaryCtaLink: heroPrimaryCtaLink,
+          secondaryCtaText: heroSecondaryCtaText,
+          secondaryCtaLink: heroSecondaryCtaLink,
+        },
+        footerCopyright,
+        features: sections || [],
+      })
+    );
     try {
       await updateSiteSettings(fd);
       toast.success("Settings saved");
@@ -83,6 +114,24 @@ export default function SiteSettingsPanel({ initialSettings }) {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>Hero Content</Label>
+            <div className="grid md:grid-cols-2 gap-3">
+              <Input value={heroBadge} onChange={(e) => setHeroBadge(e.target.value)} placeholder="Badge" />
+              <Input value={heroTitleLine1} onChange={(e) => setHeroTitleLine1(e.target.value)} placeholder="Title line 1" />
+              <Input
+                value={heroTitleHighlightLine2}
+                onChange={(e) => setHeroTitleHighlightLine2(e.target.value)}
+                placeholder="Title highlight line 2"
+              />
+              <Input value={heroDescription} onChange={(e) => setHeroDescription(e.target.value)} placeholder="Description" />
+              <Input value={heroPrimaryCtaText} onChange={(e) => setHeroPrimaryCtaText(e.target.value)} placeholder="Primary CTA text" />
+              <Input value={heroPrimaryCtaLink} onChange={(e) => setHeroPrimaryCtaLink(e.target.value)} placeholder="Primary CTA link" />
+              <Input value={heroSecondaryCtaText} onChange={(e) => setHeroSecondaryCtaText(e.target.value)} placeholder="Secondary CTA text" />
+              <Input value={heroSecondaryCtaLink} onChange={(e) => setHeroSecondaryCtaLink(e.target.value)} placeholder="Secondary CTA link" />
+            </div>
+          </div>
+
           <div className="space-y-3">
             <Label>Homepage Sections</Label>
             <div className="grid md:grid-cols-2 gap-3">
@@ -108,6 +157,11 @@ export default function SiteSettingsPanel({ initialSettings }) {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Footer Copyright</Label>
+            <Input value={footerCopyright} onChange={(e) => setFooterCopyright(e.target.value)} placeholder="© 2026 Company. All rights reserved." />
           </div>
           <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Save</Button>
         </form>

@@ -18,6 +18,7 @@ export async function generateMetadata() {
 
 export default async function RootLayout({ children }) {
   const s = await getSettings();
+  const copyright = (s.homepageSections && s.homepageSections.footerCopyright) || `© ${new Date().getFullYear()} MeetADoc. All rights reserved.`;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -36,7 +37,7 @@ export default async function RootLayout({ children }) {
 
           <footer className="bg-muted/50 py-12">
             <div className="container mx-auto px-4 text-center text-gray-200">
-              <p>Made with 💗 by Manuel</p>
+              <p>{copyright}</p>
             </div>
           </footer>
         </ThemeProvider>

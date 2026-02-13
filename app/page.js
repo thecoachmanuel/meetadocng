@@ -10,7 +10,19 @@ import { getSettings } from "@/lib/settings";
 
 export default async function Home() {
   const s = await getSettings();
-  const dynamicSections = Array.isArray(s.homepageSections) ? s.homepageSections : [];
+  const hs = s.homepageSections || {};
+  const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
+  const hero = hs.hero || {
+    badge: "Healthcare made simple",
+    titleLine1: "Connect with doctors",
+    titleHighlightLine2: "anytime, anywhere",
+    description:
+      "Book appointments, consult via video, and manage your healthcare journey all in one secure platform.",
+    primaryCtaText: "Get Started",
+    primaryCtaLink: "/onboarding",
+    secondaryCtaText: "Find Doctors",
+    secondaryCtaLink: "/doctors",
+  };
   return (
     <div className="bg-background">
       {/* Hero Section */}
@@ -22,15 +34,14 @@ export default async function Home() {
                 variant="outline"
                 className="bg-emerald-900/30 border-emerald-700/30 px-4 py-2 text-emerald-400 text-sm font-medium"
               >
-                Healthcare made simple
+                {hero.badge}
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-                Connect with doctors <br />
-                <span className="gradient-title">anytime, anywhere</span>
+                {hero.titleLine1} <br />
+                <span className="gradient-title">{hero.titleHighlightLine2}</span>
               </h1>
               <p className="text-muted-foreground text-lg md:text-xl max-w-md">
-                Book appointments, consult via video, and manage your healthcare
-                journey all in one secure platform.
+                {hero.description}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
@@ -38,8 +49,8 @@ export default async function Home() {
                   size="lg"
                   className="bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  <Link href="/onboarding">
-                    Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                  <Link href={hero.primaryCtaLink}>
+                    {hero.primaryCtaText} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button
@@ -48,7 +59,7 @@ export default async function Home() {
                   size="lg"
                   className="border-emerald-700/30 hover:bg-muted/80"
                 >
-                  <Link href="/doctors">Find Doctors</Link>
+                  <Link href={hero.secondaryCtaLink}>{hero.secondaryCtaText}</Link>
                 </Button>
               </div>
             </div>
