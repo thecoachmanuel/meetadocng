@@ -38,6 +38,7 @@ export async function getPatientAppointments() {
           select: {
             id: true,
             name: true,
+            email: true,
             specialty: true,
             imageUrl: true,
           },
