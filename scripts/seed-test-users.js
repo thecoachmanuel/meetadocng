@@ -84,13 +84,8 @@ async function main() {
 
   await db.user.upsert({
     where: { supabaseUserId: patientId },
-    create: {
-      supabaseUserId: patientId,
-      email: patientEmail,
-      role: "PATIENT",
-      name: "Test Patient",
-    },
-    update: { role: "PATIENT", name: "Test Patient" },
+    create: { supabaseUserId: patientId, email: patientEmail, role: "PATIENT" },
+    update: { role: "PATIENT" },
   });
 
   await db.user.upsert({
@@ -99,7 +94,6 @@ async function main() {
       supabaseUserId: doctorId,
       email: doctorEmail,
       role: "DOCTOR",
-      name: "Dr Test",
       specialty: "General Medicine",
       experience: 5,
       credentialUrl: "https://example.com/credential.pdf",
@@ -108,7 +102,6 @@ async function main() {
     },
     update: {
       role: "DOCTOR",
-      name: "Dr Test",
       specialty: "General Medicine",
       experience: 5,
       credentialUrl: "https://example.com/credential.pdf",
