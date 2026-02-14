@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,15 +16,49 @@ import "@stream-io/video-react-sdk/dist/css/styles.css";
 export default function VideoCall({ callId, userToken, userId, userName, error }) {
   const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const router = useRouter();
+  const [localToken, setLocalToken] = useState(null);
+  const [requesting, setRequesting] = useState(false);
+
+  const tokenToUse = userToken || localToken;
 
   const client = useMemo(() => {
-    if (!apiKey || !userId || !userToken) return null;
+    if (!apiKey || !userId || !tokenToUse) return null;
     return new StreamVideoClient({
       apiKey,
       user: { id: userId, name: userName || "User" },
-      token: userToken,
+      token: tokenToUse,
     });
-  }, [apiKey, userId, userName, userToken]);
+  }, [apiKey, userId, userName, tokenToUse]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!userToken && callId && userId && apiKey) {
+        try {
+          setRequesting(true);
+          const res = await fetch("/api/stream/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ callId, userId, userName }),
+          });
+          const json = await res.json();
+          if (res.status === 501 || json?.error === "Stream server not configured") {
+            router.replace(`/video-call?sessionId=${callId}&error=not_configured`);
+            return;
+          }
+          if (!res.ok || !json?.token) {
+            toast.error(json?.error || "Failed to fetch token");
+            return;
+          }
+          setLocalToken(json.token);
+        } catch (e) {
+          toast.error("Failed to fetch token");
+        } finally {
+          setRequesting(false);
+        }
+      }
+    };
+    run();
+  }, [apiKey, callId, router, userId, userName, userToken]);
 
   const hasApiKey = Boolean(apiKey && apiKey.trim());
 
@@ -42,7 +76,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
     );
   }
 
-  if (!callId || !userId || !userToken) {
+  if (!callId || !userId || (!userToken && !localToken && !requesting)) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-3xl font-bold text-white mb-4">Invalid Video Call</h1>
