@@ -7,16 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import useFetch from "@/hooks/use-fetch";
 
-export default function DoctorAppointmentsList() {
+export default function DoctorAppointmentsList({ appointments: initialAppointments }) {
   const {
     loading,
     data,
     fn: fetchAppointments,
+    setData,
   } = useFetch(getDoctorAppointments);
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    if (initialAppointments && Array.isArray(initialAppointments)) {
+      setData({ appointments: initialAppointments });
+    } else {
+      fetchAppointments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const appointments = data?.appointments || [];
 
