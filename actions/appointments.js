@@ -233,7 +233,12 @@ export async function generateVideoToken(formData) {
     try {
       await client.video.call("default", sessionId).getOrCreate({ created_by_id: user.id });
     } catch {}
-    const token = client.createToken(user.id);
+    let token;
+    try {
+      token = client.createToken(user.id);
+    } catch (e) {
+      return { error: "Video service not configured" };
+    }
 
     // Update the appointment with the token
     await db.appointment.update({
@@ -251,7 +256,11 @@ export async function generateVideoToken(formData) {
       token: token,
     };
   } catch (error) {
-    return { error: error?.message || "Failed to generate video token" };
+    const msg = String(error?.message || "").toLowerCase();
+    if (msg.includes("secret") || msg.includes("privatekey")) {
+      return { error: "Video service not configured" };
+    }
+    return { error: "Failed to generate video token" };
   }
 }
 
