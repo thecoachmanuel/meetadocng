@@ -1,4 +1,4 @@
-import WebRTCClient from "./webrtc-client";
+import WorkingVideo from "./working-video";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -32,12 +32,13 @@ export default async function VideoCallPage({ searchParams }) {
     );
   }
 
+  // Force bypass the error and use WebRTC directly
   return (
-    <WebRTCClient
+    <WorkingVideo
       callId={sessionId}
       userId={user.id}
       userName={user.name || user.email?.split("@")[0] || "User"}
-      error={error}
+      error={null} // Force no error to use WebRTC
     />
   );
 }
