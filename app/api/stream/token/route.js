@@ -11,8 +11,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
-    // Generate token using our config
-    const token = STREAM_CONFIG.generateDemoToken(userId, callId);
+    // Generate proper JWT token using our config
+    const token = STREAM_CONFIG.generateToken(userId, callId);
     
     return NextResponse.json({ 
       token,

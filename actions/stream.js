@@ -26,8 +26,8 @@ export async function generateStreamToken(userId, callId) {
       throw new Error("User not found");
     }
 
-    // Generate token using our config
-    const token = STREAM_CONFIG.generateDemoToken(user.id, callId);
+    // Generate proper JWT token using our config
+    const token = STREAM_CONFIG.generateToken(user.id, callId);
     
     return {
       success: true,
