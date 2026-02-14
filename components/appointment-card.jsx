@@ -219,7 +219,7 @@ export function AppointmentCard({
         String(tokenData.error).toLowerCase().includes("secret")
       ) {
         const sessionId = appointment.videoSessionId || appointment.id;
-        router.push(`/video-call?sessionId=${sessionId}&error=not_configured`);
+        router.push(`/video-call?sessionId=${sessionId}&appointmentId=${appointment.id}&error=not_configured`);
       } else {
         toast.error(tokenData.error);
       }
