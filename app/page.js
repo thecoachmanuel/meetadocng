@@ -129,7 +129,6 @@ export default async function Home() {
           </div>
 
           <div className="mx-auto">
-            {/* Clerk Pricing Table */}
             <Pricing rate={s.creditToNairaRate || 1000} freeCredits={s.freeCredits || 2} standardCredits={s.standardCredits || 10} premiumCredits={s.premiumCredits || 24} />
 
             {/* Description */}

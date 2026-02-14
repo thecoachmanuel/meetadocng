@@ -516,14 +516,14 @@ export function AppointmentCard({
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 px-4 md:px-6 pb-4">
-            <div className="flex gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2 gap-3 px-4 md:px-6 pb-4">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {/* Mark as Complete Button - Only for doctors */}
               {canMarkCompleted() && (
                 <Button
                   onClick={handleMarkCompleted}
                   disabled={completeLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700"
                 >
                   {completeLoading ? (
                     <>
@@ -545,7 +545,7 @@ export function AppointmentCard({
                   variant="outline"
                   onClick={handleCancelAppointment}
                   disabled={cancelLoading}
-                  className="border-red-900/30 text-red-400 hover:bg-red-900/10 mt-3 sm:mt-0"
+                  className="w-full sm:w-auto border-red-900/30 text-red-400 hover:bg-red-900/10"
                 >
                   {cancelLoading ? (
                     <>
@@ -564,7 +564,7 @@ export function AppointmentCard({
 
             <Button
               onClick={() => setOpen(false)}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700"
             >
               Close
             </Button>

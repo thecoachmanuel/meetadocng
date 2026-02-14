@@ -59,10 +59,10 @@ async function main() {
 
   const db = new PrismaClient();
   try {
-    const byId = await db.user.findUnique({ where: { clerkUserId: userId } });
+    const byId = await db.user.findUnique({ where: { supabaseUserId: userId } });
     if (byId) {
       await db.user.update({
-        where: { clerkUserId: userId },
+        where: { supabaseUserId: userId },
         data: { role: "ADMIN", email },
       });
     } else {
@@ -70,12 +70,12 @@ async function main() {
       if (byEmail) {
         await db.user.update({
           where: { email },
-          data: { clerkUserId: userId, role: "ADMIN" },
+          data: { supabaseUserId: userId, role: "ADMIN" },
         });
       } else {
         await db.user.create({
           data: {
-            clerkUserId: userId,
+            supabaseUserId: userId,
             email,
             name: "Admin",
             role: "ADMIN",

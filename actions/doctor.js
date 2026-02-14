@@ -21,7 +21,7 @@ export async function setAvailabilitySlots(formData) {
     // Get the doctor
     const doctor = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "DOCTOR",
       },
     });
@@ -102,7 +102,7 @@ export async function getDoctorAvailability() {
   try {
     const doctor = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "DOCTOR",
       },
     });
@@ -143,7 +143,7 @@ export async function getDoctorAppointments() {
   try {
     const doctor = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "DOCTOR",
       },
     });
@@ -189,7 +189,7 @@ export async function cancelAppointment(formData) {
   try {
     const user = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
       },
     });
 
@@ -309,7 +309,7 @@ export async function addAppointmentNotes(formData) {
   try {
     const doctor = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "DOCTOR",
       },
     });
@@ -371,7 +371,7 @@ export async function markAppointmentCompleted(formData) {
   try {
     const doctor = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "DOCTOR",
       },
     });

@@ -83,15 +83,15 @@ async function main() {
   await callMe(baseUrl, doctorSession);
 
   await db.user.upsert({
-    where: { clerkUserId: patientId },
-    create: { clerkUserId: patientId, email: patientEmail, role: "PATIENT" },
+    where: { supabaseUserId: patientId },
+    create: { supabaseUserId: patientId, email: patientEmail, role: "PATIENT" },
     update: { role: "PATIENT" },
   });
 
   await db.user.upsert({
-    where: { clerkUserId: doctorId },
+    where: { supabaseUserId: doctorId },
     create: {
-      clerkUserId: doctorId,
+      supabaseUserId: doctorId,
       email: doctorEmail,
       role: "DOCTOR",
       specialty: "General Medicine",

@@ -35,7 +35,7 @@ export async function bookAppointment(formData) {
     // Get the patient user
     const patient = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "PATIENT",
       },
     });
@@ -163,7 +163,7 @@ export async function generateVideoToken(formData) {
   try {
     const user = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
       },
     });
 
@@ -204,21 +204,21 @@ export async function generateVideoToken(formData) {
     const timeDifference = (appointmentTime - now) / (1000 * 60); // difference in minutes
 
     if (timeDifference > 30) {
-      throw new Error(
-        "The call will be available 30 minutes before the scheduled time"
-      );
+      return { error: "Video call opens 30 minutes before appointment" };
     }
 
     const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
     const secret = process.env.STREAM_SECRET_KEY;
     if (!apiKey || !secret) {
-      throw new Error("Stream server not configured");
+      return { error: "Video service not configured" };
     }
     const { StreamClient } = await import("@stream-io/node-sdk");
     const client = new StreamClient({ apiKey, secret });
-    await client.video
-      .call("default", appointment.videoSessionId)
-      .getOrCreate({ created_by_id: user.id });
+    try {
+      await client.video
+        .call("default", appointment.videoSessionId)
+        .getOrCreate({ created_by_id: user.id });
+    } catch {}
     const token = client.createToken(user.id);
 
     // Update the appointment with the token
@@ -237,8 +237,7 @@ export async function generateVideoToken(formData) {
       token: token,
     };
   } catch (error) {
-    console.error("Failed to generate video token:", error);
-    throw new Error("Failed to generate video token:" + error.message);
+    return { error: "Failed to generate video token" };
   }
 }
 

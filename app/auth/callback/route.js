@@ -34,14 +34,14 @@ export async function GET(req) {
     return res;
   }
 
-  let dbUser = await db.user.findUnique({ where: { clerkUserId: user.id } });
+  let dbUser = await db.user.findUnique({ where: { supabaseUserId: user.id } });
   if (!dbUser) {
     const email = user.email || user.identities?.[0]?.email || "";
     if (email) {
       const byEmail = await db.user.findUnique({ where: { email } });
       if (byEmail) {
-        await db.user.update({ where: { email }, data: { clerkUserId: user.id } });
-        dbUser = await db.user.findUnique({ where: { clerkUserId: user.id } });
+        await db.user.update({ where: { email }, data: { supabaseUserId: user.id } });
+        dbUser = await db.user.findUnique({ where: { supabaseUserId: user.id } });
       }
     }
   }

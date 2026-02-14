@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id                String    @id @default(uuid())
-  clerkUserId       String    @unique // Clerk's user ID
+  supabaseUserId    String    @unique
   email             String    @unique
   name              String?
   imageUrl          String?

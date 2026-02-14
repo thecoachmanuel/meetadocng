@@ -174,7 +174,7 @@ export function DoctorProfile({ doctor, availableDays, nairaRate = 1000, appoint
 
         {/* Booking Section - Conditionally rendered */}
         {showBooking && (
-          <div id="booking-section">
+          <div id="booking-section" className="scroll-mt-24">
             <Card className="border-emerald-900/20">
               <CardHeader>
                 <CardTitle className="text-xl font-bold text-white">

@@ -19,7 +19,7 @@ export async function setUserRole(formData) {
 
   // Find user in our database
   let dbUser = await db.user.findUnique({
-    where: { clerkUserId: authUser.id },
+    where: { supabaseUserId: authUser.id },
   });
 
   if (!dbUser) {
@@ -27,8 +27,8 @@ export async function setUserRole(formData) {
     if (email) {
       const byEmail = await db.user.findUnique({ where: { email } });
       if (byEmail) {
-        await db.user.update({ where: { email }, data: { clerkUserId: authUser.id } });
-        dbUser = await db.user.findUnique({ where: { clerkUserId: authUser.id } });
+        await db.user.update({ where: { email }, data: { supabaseUserId: authUser.id } });
+        dbUser = await db.user.findUnique({ where: { supabaseUserId: authUser.id } });
       }
     }
   }
@@ -39,7 +39,7 @@ export async function setUserRole(formData) {
     const email = authUser.email || authUser.identities?.[0]?.email || "";
     dbUser = await db.user.create({
       data: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         name,
         imageUrl,
         email,
@@ -58,7 +58,7 @@ export async function setUserRole(formData) {
     if (role === "PATIENT") {
       await db.user.update({
         where: {
-          clerkUserId: authUser.id,
+          supabaseUserId: authUser.id,
         },
         data: {
           role: "PATIENT",
@@ -83,7 +83,7 @@ export async function setUserRole(formData) {
 
       await db.user.update({
         where: {
-          clerkUserId: authUser.id,
+          supabaseUserId: authUser.id,
         },
         data: {
           role: "DOCTOR",
@@ -119,7 +119,7 @@ export async function getCurrentUser() {
   try {
     const dbUser = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
       },
     });
 

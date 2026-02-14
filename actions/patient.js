@@ -17,7 +17,7 @@ export async function getPatientAppointments() {
   try {
     const user = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
         role: "PATIENT",
       },
       select: {

@@ -20,7 +20,7 @@ export async function verifyAdmin() {
   try {
     let dbUser = await db.user.findUnique({
       where: {
-        clerkUserId: authUser.id,
+        supabaseUserId: authUser.id,
       },
     });
 
@@ -336,14 +336,14 @@ export async function approvePayout(formData) {
     const supabase = await supabaseServer();
     const { data, error } = await supabase.auth.getUser();
     const authUser = data?.user;
-    let admin = await db.user.findUnique({ where: { clerkUserId: authUser?.id || "" } });
+    let admin = await db.user.findUnique({ where: { supabaseUserId: authUser?.id || "" } });
     if (!admin) {
       const email = authUser?.email || authUser?.identities?.[0]?.email || "";
       if (email) {
         const byEmail = await db.user.findUnique({ where: { email } });
         if (byEmail) {
-          await db.user.update({ where: { email }, data: { clerkUserId: authUser.id } });
-          admin = await db.user.findUnique({ where: { clerkUserId: authUser.id } });
+          await db.user.update({ where: { email }, data: { supabaseUserId: authUser.id } });
+          admin = await db.user.findUnique({ where: { supabaseUserId: authUser.id } });
         }
       }
     }

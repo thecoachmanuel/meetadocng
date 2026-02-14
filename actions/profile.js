@@ -26,7 +26,7 @@ export async function updateProfile(formData) {
   }
 
   await db.user.update({
-    where: { clerkUserId: user.id },
+    where: { supabaseUserId: user.id },
     data: {
       ...(fullName ? { name: fullName } : {}),
       ...(avatarUrl ? { imageUrl: avatarUrl } : {}),
@@ -44,7 +44,7 @@ export async function deleteAvatar() {
   if (error || !data?.user) throw new Error("Unauthorized");
   const user = data.user;
 
-  const dbUser = await db.user.findUnique({ where: { clerkUserId: user.id } });
+  const dbUser = await db.user.findUnique({ where: { supabaseUserId: user.id } });
   const url = dbUser?.imageUrl || user.user_metadata?.avatar_url || "";
   if (url) {
     const idx = url.indexOf("/object/public/");
@@ -57,7 +57,7 @@ export async function deleteAvatar() {
   }
 
   await supabase.auth.updateUser({ data: { avatar_url: null } });
-  await db.user.update({ where: { clerkUserId: user.id }, data: { imageUrl: null } });
+  await db.user.update({ where: { supabaseUserId: user.id }, data: { imageUrl: null } });
   revalidatePath("/");
   return { success: true };
 }
