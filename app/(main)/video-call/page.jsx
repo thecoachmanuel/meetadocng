@@ -3,9 +3,10 @@ import { checkUser } from "@/lib/checkUser";
 import { generateVideoToken } from "@/actions/appointments";
 
 export default async function VideoCallPage({ searchParams }) {
-  const sessionId = searchParams?.sessionId || searchParams?.appointmentId;
-  const token = searchParams?.token;
-  const error = searchParams?.error;
+  const params = await searchParams;
+  const sessionId = params?.sessionId || params?.appointmentId;
+  const token = params?.token;
+  const error = params?.error;
   const user = await checkUser();
 
   let serverToken = token;
@@ -13,7 +14,7 @@ export default async function VideoCallPage({ searchParams }) {
 
   if (!serverToken && !serverError && sessionId && user?.id) {
     const fd = new FormData();
-    fd.append("appointmentId", searchParams?.appointmentId || sessionId);
+    fd.append("appointmentId", params?.appointmentId || sessionId);
     const res = await generateVideoToken(fd);
     if (res?.success && res?.token) {
       serverToken = res.token;
