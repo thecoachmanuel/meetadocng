@@ -5,7 +5,7 @@ import { db } from "@/lib/prisma";
 export async function GET(req) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const siteUrl = url.origin;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://meetadoc-ng.vercel.app";
   const res = NextResponse.redirect(new URL("/", siteUrl));
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

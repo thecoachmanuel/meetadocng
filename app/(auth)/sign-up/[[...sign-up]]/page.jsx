@@ -36,7 +36,10 @@ export default function Page() {
 
   const signUpGoogle = async () => {
     setLoading(true);
-    const siteUrl = typeof window !== "undefined" ? window.location.origin : undefined;
+    const siteUrl =
+      typeof window !== "undefined"
+        ? process.env.NEXT_PUBLIC_SITE_URL || "https://meetadoc-ng.vercel.app"
+        : "https://meetadoc-ng.vercel.app";
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
