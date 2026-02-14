@@ -98,7 +98,7 @@ async function main() {
       experience: 5,
       credentialUrl: "https://example.com/credential.pdf",
       description: "General practitioner",
-      verificationStatus: "PENDING",
+      verificationStatus: "VERIFIED",
     },
     update: {
       role: "DOCTOR",
@@ -106,9 +106,26 @@ async function main() {
       experience: 5,
       credentialUrl: "https://example.com/credential.pdf",
       description: "General practitioner",
-      verificationStatus: "PENDING",
+      verificationStatus: "VERIFIED",
     },
   });
+
+  // Ensure availability exists for the doctor: now to 3 hours ahead
+  const now = new Date();
+  const threeHours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const existingAvail = await db.availability.findFirst({
+    where: { doctorId: doctorId },
+  });
+  if (!existingAvail) {
+    await db.availability.create({
+      data: {
+        doctorId: doctorId,
+        startTime: now,
+        endTime: threeHours,
+        status: "AVAILABLE",
+      },
+    });
+  }
 
   await db.$disconnect();
   console.log("Seeded patient and doctor test users");
