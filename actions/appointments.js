@@ -10,11 +10,15 @@ async function ensureStreamCall(callId, createdById) {
   const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const secret = process.env.STREAM_SECRET_KEY;
   if (!apiKey || !secret) {
-    throw new Error("Stream server not configured");
+    return callId;
   }
-  const { StreamClient } = await import("@stream-io/node-sdk");
-  const client = new StreamClient({ apiKey, secret });
-  await client.video.call("default", callId).getOrCreate({ created_by_id: createdById });
+  try {
+    const { StreamClient } = await import("@stream-io/node-sdk");
+    const client = new StreamClient({ apiKey, secret });
+    await client.video
+      .call("default", callId)
+      .getOrCreate({ created_by_id: createdById });
+  } catch {}
   return callId;
 }
 
