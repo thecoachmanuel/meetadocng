@@ -1,4 +1,4 @@
-import LiveWebRTC from "./live-webrtc";
+import CameraDebug from "./camera-debug";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -33,7 +33,7 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <LiveWebRTC
+    <CameraDebug
       callId={sessionId}
       userId={user.id}
       userName={user.name || user.email?.split("@")[0] || "User"}
