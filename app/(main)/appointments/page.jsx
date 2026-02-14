@@ -16,7 +16,7 @@ export default async function PatientAppointmentsPage() {
   const { appointments, error } = await getPatientAppointments();
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       <PageHeader
         icon={<Calendar />}
         title="My Appointments"
@@ -26,7 +26,7 @@ export default async function PatientAppointmentsPage() {
 
       <Card className="border-emerald-900/20">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-white flex items-center">
+          <CardTitle className="text-xl md:text-2xl font-bold text-white flex items-center">
             <Calendar className="h-5 w-5 mr-2 text-emerald-400" />
             Your Scheduled Appointments
           </CardTitle>

@@ -23,15 +23,17 @@ export default function DoctorAppointmentsList() {
   return (
     <Card className="border-emerald-900/20">
       <CardHeader>
-        <CardTitle className="text-xl font-bold text-white flex items-center">
+        <CardTitle className="text-xl md:text-2xl font-bold text-white flex items-center">
           <Calendar className="h-5 w-5 mr-2 text-emerald-400" />
           Upcoming Appointments
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading appointments...</p>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="h-20 rounded-md bg-muted/20 border border-emerald-900/20 animate-pulse" />
+            <div className="h-20 rounded-md bg-muted/20 border border-emerald-900/20 animate-pulse" />
+            <div className="h-20 rounded-md bg-muted/20 border border-emerald-900/20 animate-pulse" />
           </div>
         ) : appointments.length > 0 ? (
           <div className="space-y-4">

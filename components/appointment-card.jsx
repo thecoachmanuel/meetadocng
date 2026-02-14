@@ -229,33 +229,33 @@ export function AppointmentCard({
   return (
     <>
       <Card className="border-emerald-900/20 hover:border-emerald-700/30 transition-all">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
+        <CardContent className="p-4 md:p-5">
+          <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-6">
             <div className="flex items-start gap-3">
               <div className="bg-muted/20 rounded-full p-2 mt-1">
                 {otherPartyIcon}
               </div>
               <div>
-                <h3 className="font-medium text-white">
+                <h3 className="font-medium text-white text-base md:text-lg">
                   {userRole === "DOCTOR"
                     ? otherParty.name
                     : `Dr. ${otherParty.name}`}
                 </h3>
                 {userRole === "DOCTOR" && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {otherParty.email}
                   </p>
                 )}
                 {userRole === "PATIENT" && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {otherParty.specialty}
                   </p>
                 )}
-                <div className="flex items-center mt-2 text-sm text-muted-foreground">
+                <div className="flex items-center mt-2 text-xs md:text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>{formatDateTime(appointment.startTime)}</span>
                 </div>
-                <div className="flex items-center mt-1 text-sm text-muted-foreground">
+                <div className="flex items-center mt-1 text-xs md:text-sm text-muted-foreground">
                   <Clock className="h-4 w-4 mr-1" />
                   <span>
                     {formatTime(appointment.startTime)} -{" "}
@@ -311,7 +311,7 @@ export function AppointmentCard({
 
       {/* Appointment Details Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-xl md:max-w-2xl p-0">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-white">
               Appointment Details
@@ -323,7 +323,7 @@ export function AppointmentCard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 px-4 md:px-6">
             {/* Other Party Information */}
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">
@@ -358,7 +358,7 @@ export function AppointmentCard({
               <h4 className="text-sm font-medium text-muted-foreground">
                 Scheduled Time
               </h4>
-              <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 text-emerald-400 mr-2" />
                   <p className="text-white">
@@ -402,7 +402,7 @@ export function AppointmentCard({
                     ? "Patient Description"
                     : "Your Description"}
                 </h4>
-                <div className="p-3 rounded-md bg-muted/20 border border-emerald-900/20">
+              <div className="p-3 rounded-md bg-muted/20 border border-emerald-900/20">
                   <p className="text-white whitespace-pre-line">
                     {appointment.patientDescription}
                   </p>
@@ -516,7 +516,7 @@ export function AppointmentCard({
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 px-4 md:px-6 pb-4">
             <div className="flex gap-2">
               {/* Mark as Complete Button - Only for doctors */}
               {canMarkCompleted() && (

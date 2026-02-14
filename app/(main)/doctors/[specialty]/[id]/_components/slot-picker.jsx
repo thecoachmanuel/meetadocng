@@ -34,7 +34,7 @@ export function SlotPicker({ days, onSelectSlot }) {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="w-full justify-start overflow-x-auto">
+        <TabsList className="w-full justify-start overflow-x-auto scrollbar-none gap-2">
           {days.map((day) => (
             <TabsTrigger
               key={day.date}
@@ -44,7 +44,7 @@ export function SlotPicker({ days, onSelectSlot }) {
                 day.slots.length === 0 ? "opacity-50 cursor-not-allowed" : ""
               }
             >
-              <div className="flex gap-2">
+              <div className="flex gap-2 whitespace-nowrap">
                 <div className=" opacity-80">
                   {format(new Date(day.date), "MMM d")}
                 </div>
