@@ -25,8 +25,13 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate 
     // Create form data
     const formData = new FormData();
     formData.append("doctorId", doctorId);
-    formData.append("startTime", slot.startTime);
-    formData.append("endTime", slot.endTime);
+    if (slot.startTimeMs && slot.endTimeMs) {
+      formData.append("startTimeMs", String(slot.startTimeMs));
+      formData.append("endTimeMs", String(slot.endTimeMs));
+    } else {
+      formData.append("startTime", slot.startTime);
+      formData.append("endTime", slot.endTime);
+    }
     formData.append("description", description);
 
     // Submit booking using the function from useFetch

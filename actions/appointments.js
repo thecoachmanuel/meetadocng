@@ -50,8 +50,10 @@ export async function bookAppointment(formData) {
 
     // Parse form data
     const doctorId = formData.get("doctorId");
-    const startTime = new Date(formData.get("startTime"));
-    const endTime = new Date(formData.get("endTime"));
+    const startTimeMs = formData.get("startTimeMs");
+    const endTimeMs = formData.get("endTimeMs");
+    const startTime = startTimeMs ? new Date(Number(startTimeMs)) : new Date(formData.get("startTime"));
+    const endTime = endTimeMs ? new Date(Number(endTimeMs)) : new Date(formData.get("endTime"));
     const patientDescription = formData.get("description") || null;
 
     // Validate input
@@ -369,6 +371,8 @@ export async function getAvailableTimeSlots(doctorId) {
           availableSlotsByDay[dayString].push({
             startTime: current.toISOString(),
             endTime: next.toISOString(),
+            startTimeMs: current.getTime(),
+            endTimeMs: next.getTime(),
             formatted: `${format(current, "h:mm a")} - ${format(
               next,
               "h:mm a"
