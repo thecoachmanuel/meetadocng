@@ -17,7 +17,9 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
   const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const router = useRouter();
   const [localToken, setLocalToken] = useState(null);
-  const [requesting, setRequesting] = useState(!userToken && !!callId && !!userId && !!apiKey);
+  const [requesting, setRequesting] = useState(
+    !userToken && !!callId && !!userId && !!apiKey && error !== "not_configured"
+  );
 
   const tokenToUse = userToken || localToken;
 
@@ -31,6 +33,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
   }, [apiKey, userId, userName, tokenToUse]);
 
   useEffect(() => {
+    if (error === "not_configured") return;
     const run = async () => {
       if (!userToken && callId && userId && apiKey) {
         try {
@@ -58,7 +61,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
       }
     };
     run();
-  }, [apiKey, callId, router, userId, userName, userToken]);
+  }, [apiKey, callId, router, userId, userName, userToken, error]);
 
   const hasApiKey = Boolean(apiKey && apiKey.trim());
 
