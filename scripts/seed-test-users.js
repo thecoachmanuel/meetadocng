@@ -113,13 +113,14 @@ async function main() {
   // Ensure availability exists for the doctor: now to 3 hours ahead
   const now = new Date();
   const threeHours = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const doctorDb = await db.user.findUnique({ where: { supabaseUserId: doctorId } });
   const existingAvail = await db.availability.findFirst({
-    where: { doctorId: doctorId },
+    where: { doctorId: doctorDb.id },
   });
   if (!existingAvail) {
     await db.availability.create({
       data: {
-        doctorId: doctorId,
+        doctorId: doctorDb.id,
         startTime: now,
         endTime: threeHours,
         status: "AVAILABLE",

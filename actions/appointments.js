@@ -140,6 +140,7 @@ export async function bookAppointment(formData) {
     await db.appointment.update({ where: { id: appointment.id }, data: { videoSessionId: callId } });
 
     revalidatePath("/appointments");
+    revalidatePath("/doctor");
     return { success: true, appointment: appointment };
   } catch (error) {
     console.error("Failed to book appointment:", error);
