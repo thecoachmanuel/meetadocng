@@ -148,34 +148,51 @@ export async function getAnalytics() {
 
   const settings = await (await import("@/lib/settings")).getSettings();
 
-  const usersMonthlyCalls = await Promise.all(
-    usersMonthlyCallsRaw.map(async (row) => {
-      const u = await db.user.findUnique({ where: { id: row.patientId } });
-      return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
-    })
-  );
-  const usersAllTimeCalls = await Promise.all(
-    usersAllTimeCallsRaw.map(async (row) => {
-      const u = await db.user.findUnique({ where: { id: row.patientId } });
-      return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
-    })
-  );
-  const doctorsMonthlyEarnings = await Promise.all(
-    doctorsMonthlyEarningsRaw.map(async (row) => {
-      const d = await db.user.findUnique({ where: { id: row.doctorId } });
-      const points = row._count._all * settings.appointmentCreditCost;
-      const naira = points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
-      return { id: d.id, name: d.name, email: d.email, points, naira };
-    })
-  );
-  const doctorsAllTimeEarnings = await Promise.all(
-    doctorsAllTimeEarningsRaw.map(async (row) => {
-      const d = await db.user.findUnique({ where: { id: row.doctorId } });
-      const points = row._count._all * settings.appointmentCreditCost;
-      const naira = points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
-      return { id: d.id, name: d.name, email: d.email, points, naira };
-    })
-  );
+  const usersMonthlyCalls = (
+    await Promise.all(
+      usersMonthlyCallsRaw.map(async (row) => {
+        const u = await db.user.findUnique({ where: { id: row.patientId } });
+        if (!u) return null;
+        return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
+      })
+    )
+  ).filter(Boolean);
+
+  const usersAllTimeCalls = (
+    await Promise.all(
+      usersAllTimeCallsRaw.map(async (row) => {
+        const u = await db.user.findUnique({ where: { id: row.patientId } });
+        if (!u) return null;
+        return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
+      })
+    )
+  ).filter(Boolean);
+
+  const doctorsMonthlyEarnings = (
+    await Promise.all(
+      doctorsMonthlyEarningsRaw.map(async (row) => {
+        const d = await db.user.findUnique({ where: { id: row.doctorId } });
+        if (!d) return null;
+        const points = row._count._all * settings.appointmentCreditCost;
+        const naira =
+          points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+        return { id: d.id, name: d.name, email: d.email, points, naira };
+      })
+    )
+  ).filter(Boolean);
+
+  const doctorsAllTimeEarnings = (
+    await Promise.all(
+      doctorsAllTimeEarningsRaw.map(async (row) => {
+        const d = await db.user.findUnique({ where: { id: row.doctorId } });
+        if (!d) return null;
+        const points = row._count._all * settings.appointmentCreditCost;
+        const naira =
+          points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+        return { id: d.id, name: d.name, email: d.email, points, naira };
+      })
+    )
+  ).filter(Boolean);
 
   return {
     usersMonthlyCalls,

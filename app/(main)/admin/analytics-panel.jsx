@@ -4,7 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function AnalyticsPanel({ stats }) {
-  const { usersMonthlyCalls, usersAllTimeCalls, doctorsMonthlyEarnings, doctorsAllTimeEarnings } = stats || {};
+  const {
+    usersMonthlyCalls = [],
+    usersAllTimeCalls = [],
+    doctorsMonthlyEarnings = [],
+    doctorsAllTimeEarnings = [],
+  } = stats || {};
   return (
     <div className="space-y-6">
       <Card className="bg-muted/20 border-emerald-900/20">

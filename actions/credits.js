@@ -79,7 +79,7 @@ export async function deductCreditsForAppointment(userId, doctorId) {
       await tx.creditTransaction.create({
         data: {
           userId: doctor.id,
-          amount: APPOINTMENT_CREDIT_COST,
+          amount: settings.appointmentCreditCost,
           type: "APPOINTMENT_DEDUCTION", // Using same type for consistency
         },
       });
@@ -103,7 +103,7 @@ export async function deductCreditsForAppointment(userId, doctorId) {
         },
         data: {
           credits: {
-            increment: APPOINTMENT_CREDIT_COST,
+            increment: settings.appointmentCreditCost,
           },
         },
       });
