@@ -319,6 +319,21 @@ export async function getAvailableTimeSlots(doctorId) {
     });
 
     const availableSlotsByDay = {};
+    const tz = "Africa/Lagos";
+    const fmtTime = (d) =>
+      new Intl.DateTimeFormat("en-NG", {
+        timeZone: tz,
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(d);
+    const fmtDay = (d) =>
+      new Intl.DateTimeFormat("en-NG", {
+        timeZone: tz,
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(d);
 
     // For each of the next 4 days, generate available slots
     for (const day of days) {
@@ -373,11 +388,8 @@ export async function getAvailableTimeSlots(doctorId) {
             endTime: next.toISOString(),
             startTimeMs: current.getTime(),
             endTimeMs: next.getTime(),
-            formatted: `${format(current, "h:mm a")} - ${format(
-              next,
-              "h:mm a"
-            )}`,
-            day: format(current, "EEEE, MMMM d"),
+            formatted: `${fmtTime(current)} - ${fmtTime(next)}`,
+            day: fmtDay(current),
           });
         }
 
@@ -388,10 +400,7 @@ export async function getAvailableTimeSlots(doctorId) {
     // Convert to array of slots grouped by day for easier consumption by the UI
     const result = Object.entries(availableSlotsByDay).map(([date, slots]) => ({
       date,
-      displayDate:
-        slots.length > 0
-          ? slots[0].day
-          : format(new Date(date), "EEEE, MMMM d"),
+      displayDate: slots.length > 0 ? slots[0].day : fmtDay(new Date(date + "T00:00:00Z")),
       slots,
     }));
 

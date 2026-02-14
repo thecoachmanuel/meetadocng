@@ -70,7 +70,15 @@ export function AppointmentCard({
   // Format date and time
   const formatDateTime = (dateString) => {
     try {
-      return format(new Date(dateString), "MMMM d, yyyy 'at' h:mm a");
+      return new Intl.DateTimeFormat("en-NG", {
+        timeZone: "Africa/Lagos",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date(dateString));
     } catch (e) {
       return "Invalid date";
     }
@@ -79,7 +87,12 @@ export function AppointmentCard({
   // Format time only
   const formatTime = (dateString) => {
     try {
-      return format(new Date(dateString), "h:mm a");
+      return new Intl.DateTimeFormat("en-NG", {
+        timeZone: "Africa/Lagos",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date(dateString));
     } catch (e) {
       return "Invalid time";
     }
