@@ -1,4 +1,4 @@
-import VideoCallSimple from "./video-call-simple";
+import WebRTCClient from "./webrtc-client";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -32,16 +32,11 @@ export default async function VideoCallPage({ searchParams }) {
     );
   }
 
-  // Create a simple token for testing
-  const userName = user.name || user.email?.split("@")[0] || "User";
-  const userToken = `demo_token_${user.id}_${sessionId}`;
-
   return (
-    <VideoCallSimple
+    <WebRTCClient
       callId={sessionId}
-      userToken={userToken}
       userId={user.id}
-      userName={userName}
+      userName={user.name || user.email?.split("@")[0] || "User"}
       error={error}
     />
   );
