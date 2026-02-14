@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import {
   Card,
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 
 export function AvailabilitySettings({ slots }) {
   const [showForm, setShowForm] = useState(false);
+  const router = useRouter();
 
   // Custom hook for server action
   const { loading, fn: submitSlots, data } = useFetch(setAvailabilitySlots);
@@ -77,8 +79,9 @@ export function AvailabilitySettings({ slots }) {
     if (data && data?.success) {
       setShowForm(false);
       toast.success("Availability slots updated successfully");
+      router.refresh();
     }
-  }, [data]);
+  }, [data, router]);
 
   // Format time string for display
   const formatTimeString = (dateString) => {

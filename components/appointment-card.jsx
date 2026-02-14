@@ -201,6 +201,7 @@ export function AppointmentCard({
         `/video-call?sessionId=${tokenData.videoSessionId}&token=${tokenData.token}&appointmentId=${appointment.id}`
       );
     } else if (tokenData?.error) {
+      toast.error(tokenData.error);
       setAction(null);
     }
   }, [tokenData, appointment.id, router]);
