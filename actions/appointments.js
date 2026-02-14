@@ -223,8 +223,8 @@ export async function generateVideoToken(formData) {
       return { error: "Video call opens 30 minutes before appointment" };
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
-    const secret = process.env.STREAM_SECRET_KEY;
+    const apiKey = (process.env.NEXT_PUBLIC_STREAM_API_KEY || "").trim();
+    const secret = (process.env.STREAM_SECRET_KEY || "").trim();
     if (!apiKey || !secret) {
       return { error: "Video service not configured" };
     }
