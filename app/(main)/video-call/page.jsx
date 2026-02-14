@@ -1,7 +1,6 @@
 import VideoCallClient from "./video-call-client";
 import { checkUser } from "@/lib/checkUser";
 import { generateStreamToken } from "@/actions/stream";
-import { STREAM_CONFIG } from "@/lib/stream-config";
 
 export default async function VideoCallPage({ searchParams }) {
   const params = await searchParams;
