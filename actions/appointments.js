@@ -205,7 +205,16 @@ export async function generateVideoToken(formData) {
       throw new Error("This appointment is not currently scheduled");
     }
 
-    // Verify the appointment is within a valid time range (e.g., starting 5 minutes before scheduled time)
+    // Ensure session id is set
+    let sessionId = appointment.videoSessionId || appointment.id;
+    if (!appointment.videoSessionId) {
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: { videoSessionId: sessionId },
+      });
+    }
+
+    // Verify the appointment is within a valid time range
     const now = new Date();
     const appointmentTime = new Date(appointment.startTime);
     const timeDifference = (appointmentTime - now) / (1000 * 60); // difference in minutes
@@ -222,9 +231,7 @@ export async function generateVideoToken(formData) {
     const { StreamClient } = await import("@stream-io/node-sdk");
     const client = new StreamClient({ apiKey, secret });
     try {
-      await client.video
-        .call("default", appointment.videoSessionId)
-        .getOrCreate({ created_by_id: user.id });
+      await client.video.call("default", sessionId).getOrCreate({ created_by_id: user.id });
     } catch {}
     const token = client.createToken(user.id);
 
@@ -240,11 +247,11 @@ export async function generateVideoToken(formData) {
 
     return {
       success: true,
-      videoSessionId: appointment.videoSessionId,
+      videoSessionId: sessionId,
       token: token,
     };
   } catch (error) {
-    return { error: "Failed to generate video token" };
+    return { error: error?.message || "Failed to generate video token" };
   }
 }
 
