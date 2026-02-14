@@ -17,9 +17,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
   const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const router = useRouter();
   const [localToken, setLocalToken] = useState(null);
-  const [requesting, setRequesting] = useState(
-    !userToken && !!callId && !!userId && !!apiKey && error !== "not_configured"
-  );
+  const [requesting, setRequesting] = useState(false);
 
   const tokenToUse = userToken || localToken;
 
@@ -32,36 +30,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
     });
   }, [apiKey, userId, userName, tokenToUse]);
 
-  useEffect(() => {
-    if (error === "not_configured") return;
-    const run = async () => {
-      if (!userToken && callId && userId && apiKey) {
-        try {
-          setRequesting(true);
-          const res = await fetch("/api/stream/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ callId, userId, userName }),
-          });
-          const json = await res.json();
-          if (res.status === 501 || json?.error === "Stream server not configured") {
-            router.replace(`/video-call?sessionId=${callId}&error=not_configured`);
-            return;
-          }
-          if (!res.ok || !json?.token) {
-            toast.error(json?.error || "Failed to fetch token");
-            return;
-          }
-          setLocalToken(json.token);
-        } catch (e) {
-          toast.error("Failed to fetch token");
-        } finally {
-          setRequesting(false);
-        }
-      }
-    };
-    run();
-  }, [apiKey, callId, router, userId, userName, userToken, error]);
+  // Client token fetch removed - server-side page handles it
 
   const hasApiKey = Boolean(apiKey && apiKey.trim());
 
@@ -79,23 +48,14 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
     );
   }
 
-  if (!callId || !userId || (!userToken && !localToken && !requesting)) {
+  if (!callId || !userId || (!userToken && !localToken)) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        {requesting ? (
-          <>
-            <h1 className="text-3xl font-bold text-white mb-4">Initializing Video Call</h1>
-            <p className="text-muted-foreground mb-6">Fetching secure token…</p>
-          </>
-        ) : (
-          <>
-            <h1 className="text-3xl font-bold text-white mb-4">Invalid Video Call</h1>
-            <p className="text-muted-foreground mb-6">Missing required parameters for the video call.</p>
-            <Button onClick={() => router.push("/appointments")} className="bg-emerald-600 hover:bg-emerald-700">
-              Back to Appointments
-            </Button>
-          </>
-        )}
+        <h1 className="text-3xl font-bold text-white mb-4">Invalid Video Call</h1>
+        <p className="text-muted-foreground mb-6">Missing required parameters for the video call.</p>
+        <Button onClick={() => router.push("/appointments")} className="bg-emerald-600 hover:bg-emerald-700">
+          Back to Appointments
+        </Button>
       </div>
     );
   }
