@@ -1,4 +1,4 @@
-import CameraDebug from "./camera-debug";
+import WorkingCamera from "./working-camera";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -33,7 +33,7 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <CameraDebug
+    <WorkingCamera
       callId={sessionId}
       userId={user.id}
       userName={user.name || user.email?.split("@")[0] || "User"}
