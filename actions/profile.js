@@ -7,10 +7,9 @@ import { revalidatePath } from "next/cache";
 
 export async function updateProfile(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const user = data.user;
 
   const fullName = formData.get("fullName") || undefined;
   const avatarUrl = formData.get("avatarUrl") || undefined;
@@ -41,10 +40,9 @@ export async function updateProfile(formData) {
 export async function deleteAvatar() {
   const supabase = await supabaseServer();
   const admin = supabaseAdmin();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const user = data.user;
 
   const dbUser = await db.user.findUnique({ where: { clerkUserId: user.id } });
   const url = dbUser?.imageUrl || user.user_metadata?.avatar_url || "";
@@ -66,10 +64,9 @@ export async function deleteAvatar() {
 
 export async function changePassword(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const user = data.user;
 
   const newPassword = formData.get("newPassword");
   const confirmPassword = formData.get("confirmPassword");

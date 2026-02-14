@@ -9,13 +9,13 @@ import { revalidatePath } from "next/cache";
  */
 export async function setAvailabilitySlots(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     // Get the doctor
@@ -91,13 +91,13 @@ export async function setAvailabilitySlots(formData) {
  */
 export async function getDoctorAvailability() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const doctor = await db.user.findUnique({
@@ -132,13 +132,13 @@ export async function getDoctorAvailability() {
 
 export async function getDoctorAppointments() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const doctor = await db.user.findUnique({
@@ -178,13 +178,13 @@ export async function getDoctorAppointments() {
  */
 export async function cancelAppointment(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const user = await db.user.findUnique({
@@ -298,13 +298,13 @@ export async function cancelAppointment(formData) {
  */
 export async function addAppointmentNotes(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const doctor = await db.user.findUnique({
@@ -360,13 +360,13 @@ export async function addAppointmentNotes(formData) {
  */
 export async function markAppointmentCompleted(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const doctor = await db.user.findUnique({

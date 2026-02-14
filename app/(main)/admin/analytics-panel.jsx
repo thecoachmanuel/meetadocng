@@ -20,23 +20,31 @@ export default function AnalyticsPanel({ stats }) {
           <div>
             <div className="text-white font-medium mb-2">This Month</div>
             <div className="space-y-2">
-              {usersMonthlyCalls.map((u) => (
-                <div key={u.id} className="flex items-center justify-between">
-                  <div className="text-white">{u.name || u.email}</div>
-                  <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">{u.calls}</Badge>
-                </div>
-              ))}
+              {(usersMonthlyCalls || []).length === 0 ? (
+                <div className="text-sm text-muted-foreground">No data available</div>
+              ) : (
+                usersMonthlyCalls.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between">
+                    <div className="text-white">{u.name || u.email}</div>
+                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">{u.calls}</Badge>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           <div>
             <div className="text-white font-medium mb-2">All Time</div>
             <div className="space-y-2">
-              {usersAllTimeCalls.map((u) => (
-                <div key={u.id} className="flex items-center justify-between">
-                  <div className="text-white">{u.name || u.email}</div>
-                  <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">{u.calls}</Badge>
-                </div>
-              ))}
+              {(usersAllTimeCalls || []).length === 0 ? (
+                <div className="text-sm text-muted-foreground">No data available</div>
+              ) : (
+                usersAllTimeCalls.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between">
+                    <div className="text-white">{u.name || u.email}</div>
+                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">{u.calls}</Badge>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </CardContent>
@@ -50,23 +58,31 @@ export default function AnalyticsPanel({ stats }) {
           <div>
             <div className="text-white font-medium mb-2">This Month</div>
             <div className="space-y-2">
-              {doctorsMonthlyEarnings.map((d) => (
-                <div key={d.id} className="flex items-center justify-between">
-                  <div className="text-white">{d.name || d.email}</div>
-                  <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">₦{d.naira} ({d.points} pts)</Badge>
-                </div>
-              ))}
+              {(doctorsMonthlyEarnings || []).length === 0 ? (
+                <div className="text-sm text-muted-foreground">No data available</div>
+              ) : (
+                doctorsMonthlyEarnings.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between">
+                    <div className="text-white">{d.name || d.email}</div>
+                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">₦{d.naira} ({d.points} pts)</Badge>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           <div>
             <div className="text-white font-medium mb-2">All Time</div>
             <div className="space-y-2">
-              {doctorsAllTimeEarnings.map((d) => (
-                <div key={d.id} className="flex items-center justify-between">
-                  <div className="text-white">{d.name || d.email}</div>
-                  <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">₦{d.naira} ({d.points} pts)</Badge>
-                </div>
-              ))}
+              {(doctorsAllTimeEarnings || []).length === 0 ? (
+                <div className="text-sm text-muted-foreground">No data available</div>
+              ) : (
+                doctorsAllTimeEarnings.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between">
+                    <div className="text-white">{d.name || d.email}</div>
+                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">₦{d.naira} ({d.points} pts)</Badge>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </CardContent>

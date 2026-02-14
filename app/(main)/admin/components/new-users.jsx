@@ -10,7 +10,7 @@ export function NewUsers({ users }) {
         <CardTitle className="text-xl font-bold text-white">New Users</CardTitle>
       </CardHeader>
       <CardContent>
-        {users.length === 0 ? (
+        {!users || users.length === 0 ? (
           <div className="text-muted-foreground">No new users.</div>
         ) : (
           <div className="space-y-3">

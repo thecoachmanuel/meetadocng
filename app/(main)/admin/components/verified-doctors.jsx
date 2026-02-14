@@ -27,7 +27,7 @@ export function VerifiedDoctors({ doctors }) {
     fn: submitStatusUpdate,
   } = useFetch(updateDoctorActiveStatus);
 
-  const filteredDoctors = doctors.filter((doctor) => {
+  const filteredDoctors = (doctors || []).filter((doctor) => {
     const query = (searchTerm || "").toLowerCase();
     const name = (doctor.name || "").toLowerCase();
     const specialty = (doctor.specialty || "").toLowerCase();

@@ -4,30 +4,32 @@ import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { deductCreditsForAppointment } from "@/actions/credits";
-import { Vonage } from "@vonage/server-sdk";
 import { addDays, addMinutes, format, isBefore, endOfDay } from "date-fns";
-import { Auth } from "@vonage/auth";
 
-// Initialize Vonage Video API client
-const credentials = new Auth({
-  applicationId: process.env.NEXT_PUBLIC_VONAGE_APPLICATION_ID,
-  privateKey: process.env.VONAGE_PRIVATE_KEY,
-});
-const options = {};
-const vonage = new Vonage(credentials, options);
+async function ensureStreamCall(callId, createdById) {
+  const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
+  const secret = process.env.STREAM_SECRET_KEY;
+  if (!apiKey || !secret) {
+    throw new Error("Stream server not configured");
+  }
+  const { StreamClient } = await import("@stream-io/node-sdk");
+  const client = new StreamClient({ apiKey, secret });
+  await client.video.call("default", callId).getOrCreate({ created_by_id: createdById });
+  return callId;
+}
 
 /**
  * Book a new appointment with a doctor
  */
 export async function bookAppointment(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     // Get the patient user
@@ -112,9 +114,6 @@ export async function bookAppointment(formData) {
       throw new Error("This time slot is already booked");
     }
 
-    // Create a new Vonage Video API session
-    const sessionId = await createVideoSession();
-
     // Deduct credits from patient and add to doctor
     const { success, error } = await deductCreditsForAppointment(
       patient.id,
@@ -125,7 +124,6 @@ export async function bookAppointment(formData) {
       throw new Error(error || "Failed to deduct credits");
     }
 
-    // Create the appointment with the video session ID
     const appointment = await db.appointment.create({
       data: {
         patientId: patient.id,
@@ -134,9 +132,12 @@ export async function bookAppointment(formData) {
         endTime,
         patientDescription,
         status: "SCHEDULED",
-        videoSessionId: sessionId, // Store the Vonage session ID
+        videoSessionId: null,
       },
     });
+
+    const callId = await ensureStreamCall(appointment.id, patient.id);
+    await db.appointment.update({ where: { id: appointment.id }, data: { videoSessionId: callId } });
 
     revalidatePath("/appointments");
     return { success: true, appointment: appointment };
@@ -147,28 +148,15 @@ export async function bookAppointment(formData) {
 }
 
 /**
- * Generate a Vonage Video API session
- */
-async function createVideoSession() {
-  try {
-    const session = await vonage.video.createSession({ mediaMode: "routed" });
-    return session.sessionId;
-  } catch (error) {
-    throw new Error("Failed to create video session: " + error.message);
-  }
-}
-
-/**
  * Generate a token for a video session
  * This will be called when either doctor or patient is about to join the call
  */
 export async function generateVideoToken(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  const authUser = data?.user;
 
-  if (!authUser) {
+  if (error || !authUser) {
     throw new Error("Unauthorized");
   }
 
@@ -221,25 +209,17 @@ export async function generateVideoToken(formData) {
       );
     }
 
-    // Generate a token for the video session
-    // Token expires 2 hours after the appointment start time
-    const appointmentEndTime = new Date(appointment.endTime);
-    const expirationTime =
-      Math.floor(appointmentEndTime.getTime() / 1000) + 60 * 60; // 1 hour after end time
-
-    // Use user's name and role as connection data
-    const connectionData = JSON.stringify({
-      name: user.name,
-      role: user.role,
-      userId: user.id,
-    });
-
-    // Generate the token with appropriate role and expiration
-    const token = vonage.video.generateClientToken(appointment.videoSessionId, {
-      role: "publisher", // Both doctor and patient can publish streams
-      expireTime: expirationTime,
-      data: connectionData,
-    });
+    const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
+    const secret = process.env.STREAM_SECRET_KEY;
+    if (!apiKey || !secret) {
+      throw new Error("Stream server not configured");
+    }
+    const { StreamClient } = await import("@stream-io/node-sdk");
+    const client = new StreamClient({ apiKey, secret });
+    await client.video
+      .call("default", appointment.videoSessionId)
+      .getOrCreate({ created_by_id: user.id });
+    const token = client.createToken(user.id);
 
     // Update the appointment with the token
     await db.appointment.update({

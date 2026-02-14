@@ -9,13 +9,13 @@ import { revalidatePath } from "next/cache";
  */
 export async function setUserRole(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   // Find user in our database
   let dbUser = await db.user.findUnique({
@@ -109,11 +109,10 @@ export async function setUserRole(formData) {
  */
 export async function getCurrentUser() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  const authUser = data?.user;
 
-  if (!authUser) {
+  if (error || !authUser) {
     return null;
   }
 

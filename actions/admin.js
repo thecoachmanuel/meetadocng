@@ -9,13 +9,13 @@ import { revalidatePath } from "next/cache";
  */
 export async function verifyAdmin() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     return false;
   }
+
+  const authUser = data.user;
 
   try {
     let dbUser = await db.user.findUnique({
@@ -27,11 +27,7 @@ export async function verifyAdmin() {
     if (!dbUser) {
       const email = authUser.email || authUser.identities?.[0]?.email || "";
       if (email) {
-        const byEmail = await db.user.findUnique({ where: { email } });
-        if (byEmail) {
-          await db.user.update({ where: { email }, data: { clerkUserId: authUser.id } });
-          dbUser = await db.user.findUnique({ where: { clerkUserId: authUser.id } });
-        }
+        dbUser = await db.user.findUnique({ where: { email } });
       }
     }
 
@@ -95,111 +91,131 @@ export async function getNewUsers() {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) throw new Error("Unauthorized");
 
-  const users = await db.user.findMany({ orderBy: { createdAt: "desc" }, take: 20 });
-  return { users };
+  try {
+    const users = await db.user.findMany({ orderBy: { createdAt: "desc" }, take: 20 });
+    return { users };
+  } catch (error) {
+    console.error("Failed to get new users:", error);
+    return { users: [] };
+  }
 }
 
 export async function getLeaderboards() {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) throw new Error("Unauthorized");
 
-  const topPatients = await db.user.findMany({
-    where: { role: "PATIENT" },
-    orderBy: { credits: "desc" },
-    take: 10,
-    select: { id: true, name: true, email: true, credits: true },
-  });
-  const topDoctors = await db.user.findMany({
-    where: { role: "DOCTOR" },
-    orderBy: { credits: "desc" },
-    take: 10,
-    select: { id: true, name: true, email: true, credits: true, specialty: true },
-  });
-  return { patients: topPatients, doctors: topDoctors };
+  try {
+    const topPatients = await db.user.findMany({
+      where: { role: "PATIENT" },
+      orderBy: { credits: "desc" },
+      take: 10,
+      select: { id: true, name: true, email: true, credits: true },
+    });
+    const topDoctors = await db.user.findMany({
+      where: { role: "DOCTOR" },
+      orderBy: { credits: "desc" },
+      take: 10,
+      select: { id: true, name: true, email: true, credits: true, specialty: true },
+    });
+    return { patients: topPatients, doctors: topDoctors };
+  } catch (error) {
+    console.error("Failed to get leaderboards:", error);
+    return { patients: [], doctors: [] };
+  }
 }
 
 export async function getAnalytics() {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) throw new Error("Unauthorized");
 
-  const now = new Date();
-  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  try {
+    const now = new Date();
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const usersMonthlyCallsRaw = await db.appointment.groupBy({
-    by: ["patientId"],
-    where: { status: "COMPLETED", createdAt: { gte: startMonth } },
-    _count: { _all: true },
-  });
-  const usersAllTimeCallsRaw = await db.appointment.groupBy({
-    by: ["patientId"],
-    where: { status: "COMPLETED" },
-    _count: { _all: true },
-  });
-  const doctorsMonthlyEarningsRaw = await db.appointment.groupBy({
-    by: ["doctorId"],
-    where: { status: "COMPLETED", createdAt: { gte: startMonth } },
-    _count: { _all: true },
-  });
-  const doctorsAllTimeEarningsRaw = await db.appointment.groupBy({
-    by: ["doctorId"],
-    where: { status: "COMPLETED" },
-    _count: { _all: true },
-  });
+    const usersMonthlyCallsRaw = await db.appointment.groupBy({
+      by: ["patientId"],
+      where: { status: "COMPLETED", createdAt: { gte: startMonth } },
+      _count: { _all: true },
+    });
+    const usersAllTimeCallsRaw = await db.appointment.groupBy({
+      by: ["patientId"],
+      where: { status: "COMPLETED" },
+      _count: { _all: true },
+    });
+    const doctorsMonthlyEarningsRaw = await db.appointment.groupBy({
+      by: ["doctorId"],
+      where: { status: "COMPLETED", createdAt: { gte: startMonth } },
+      _count: { _all: true },
+    });
+    const doctorsAllTimeEarningsRaw = await db.appointment.groupBy({
+      by: ["doctorId"],
+      where: { status: "COMPLETED" },
+      _count: { _all: true },
+    });
 
-  const settings = await (await import("@/lib/settings")).getSettings();
+    const settings = await (await import("@/lib/settings")).getSettings();
 
-  const usersMonthlyCalls = (
-    await Promise.all(
-      usersMonthlyCallsRaw.map(async (row) => {
-        const u = await db.user.findUnique({ where: { id: row.patientId } });
-        if (!u) return null;
-        return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
-      })
-    )
-  ).filter(Boolean);
+    const usersMonthlyCalls = (
+      await Promise.all(
+        usersMonthlyCallsRaw.map(async (row) => {
+          const u = await db.user.findUnique({ where: { id: row.patientId } });
+          if (!u) return null;
+          return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
+        })
+      )
+    ).filter(Boolean);
 
-  const usersAllTimeCalls = (
-    await Promise.all(
-      usersAllTimeCallsRaw.map(async (row) => {
-        const u = await db.user.findUnique({ where: { id: row.patientId } });
-        if (!u) return null;
-        return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
-      })
-    )
-  ).filter(Boolean);
+    const usersAllTimeCalls = (
+      await Promise.all(
+        usersAllTimeCallsRaw.map(async (row) => {
+          const u = await db.user.findUnique({ where: { id: row.patientId } });
+          if (!u) return null;
+          return { id: u.id, name: u.name, email: u.email, calls: row._count._all };
+        })
+      )
+    ).filter(Boolean);
 
-  const doctorsMonthlyEarnings = (
-    await Promise.all(
-      doctorsMonthlyEarningsRaw.map(async (row) => {
-        const d = await db.user.findUnique({ where: { id: row.doctorId } });
-        if (!d) return null;
-        const points = row._count._all * settings.appointmentCreditCost;
-        const naira =
-          points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
-        return { id: d.id, name: d.name, email: d.email, points, naira };
-      })
-    )
-  ).filter(Boolean);
+    const doctorsMonthlyEarnings = (
+      await Promise.all(
+        doctorsMonthlyEarningsRaw.map(async (row) => {
+          const d = await db.user.findUnique({ where: { id: row.doctorId } });
+          if (!d) return null;
+          const points = row._count._all * settings.appointmentCreditCost;
+          const naira =
+            points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+          return { id: d.id, name: d.name, email: d.email, points, naira };
+        })
+      )
+    ).filter(Boolean);
 
-  const doctorsAllTimeEarnings = (
-    await Promise.all(
-      doctorsAllTimeEarningsRaw.map(async (row) => {
-        const d = await db.user.findUnique({ where: { id: row.doctorId } });
-        if (!d) return null;
-        const points = row._count._all * settings.appointmentCreditCost;
-        const naira =
-          points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
-        return { id: d.id, name: d.name, email: d.email, points, naira };
-      })
-    )
-  ).filter(Boolean);
+    const doctorsAllTimeEarnings = (
+      await Promise.all(
+        doctorsAllTimeEarningsRaw.map(async (row) => {
+          const d = await db.user.findUnique({ where: { id: row.doctorId } });
+          if (!d) return null;
+          const points = row._count._all * settings.appointmentCreditCost;
+          const naira =
+            points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+          return { id: d.id, name: d.name, email: d.email, points, naira };
+        })
+      )
+    ).filter(Boolean);
 
-  return {
-    usersMonthlyCalls,
-    usersAllTimeCalls,
-    doctorsMonthlyEarnings,
-    doctorsAllTimeEarnings,
-  };
+    return {
+      usersMonthlyCalls,
+      usersAllTimeCalls,
+      doctorsMonthlyEarnings,
+      doctorsAllTimeEarnings,
+    };
+  } catch (error) {
+    console.error("Failed to get analytics:", error);
+    return {
+      usersMonthlyCalls: [],
+      usersAllTimeCalls: [],
+      doctorsMonthlyEarnings: [],
+      doctorsAllTimeEarnings: [],
+    };
+  }
 }
 
 /**
@@ -318,9 +334,8 @@ export async function approvePayout(formData) {
 
   try {
     const supabase = await supabaseServer();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser();
+    const authUser = data?.user;
     let admin = await db.user.findUnique({ where: { clerkUserId: authUser?.id || "" } });
     if (!admin) {
       const email = authUser?.email || authUser?.identities?.[0]?.email || "";

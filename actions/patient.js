@@ -6,13 +6,13 @@ import { supabaseServer } from "@/lib/supabase-server";
  */
 export async function getPatientAppointments() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const user = await db.user.findUnique({

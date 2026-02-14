@@ -27,11 +27,10 @@ export async function GET(req) {
     return res;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data, error: userError } = await supabase.auth.getUser();
+  const user = data?.user;
 
-  if (!user) {
+  if (userError || !user) {
     return res;
   }
 

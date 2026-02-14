@@ -75,7 +75,7 @@ export function PendingDoctors({ doctors }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {doctors.length === 0 ? (
+          {!doctors || doctors.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No pending verification requests at this time.
             </div>

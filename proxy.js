@@ -25,9 +25,8 @@ export default async function proxy(req) {
     },
   });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getUser();
+  const user = data?.user;
 
   const url = new URL(req.url);
   const isProtected = protectedMatchers.some((pattern) =>
@@ -36,7 +35,7 @@ export default async function proxy(req) {
     )
   );
 
-  if (!session && isProtected) {
+  if (!user && isProtected) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 

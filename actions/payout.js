@@ -14,13 +14,13 @@ const DOCTOR_EARNINGS_PER_CREDIT = 8; // $8 to doctor
  */
 export async function requestPayout(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (!authUser) {
+  if (error || !data?.user) {
     throw new Error("Unauthorized");
   }
+
+  const authUser = data.user;
 
   try {
     const doctor = await db.user.findUnique({
@@ -100,11 +100,10 @@ export async function requestPayout(formData) {
  */
 export async function getDoctorPayouts() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  const authUser = data?.user;
 
-  if (!authUser) {
+  if (error || !authUser) {
     throw new Error("Unauthorized");
   }
 
@@ -140,11 +139,10 @@ export async function getDoctorPayouts() {
  */
 export async function getDoctorEarnings() {
   const supabase = await supabaseServer();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  const authUser = data?.user;
 
-  if (!authUser) {
+  if (error || !authUser) {
     throw new Error("Unauthorized");
   }
 

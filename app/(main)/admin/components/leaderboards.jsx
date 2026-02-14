@@ -12,7 +12,7 @@ export function Leaderboards({ patients, doctors }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {patients.map((p, i) => (
+            {(patients || []).map((p, i) => (
               <div key={p.id} className="flex items-center justify-between">
                 <div>
                   <div className="text-white font-medium">{p.name || p.email}</div>
@@ -33,7 +33,7 @@ export function Leaderboards({ patients, doctors }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {doctors.map((d, i) => (
+            {(doctors || []).map((d, i) => (
               <div key={d.id} className="flex items-center justify-between">
                 <div>
                   <div className="text-white font-medium">{d.name || d.email}</div>

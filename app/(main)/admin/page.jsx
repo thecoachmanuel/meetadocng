@@ -27,17 +27,33 @@ export default async function AdminPage() {
   ]);
 
   const pendingDoctorsData =
-    results[0].status === "fulfilled" ? results[0].value : { doctors: [] };
+    results[0].status === "fulfilled" && results[0].value
+      ? results[0].value
+      : { doctors: [] };
   const verifiedDoctorsData =
-    results[1].status === "fulfilled" ? results[1].value : { doctors: [] };
+    results[1].status === "fulfilled" && results[1].value
+      ? results[1].value
+      : { doctors: [] };
   const pendingPayoutsData =
-    results[2].status === "fulfilled" ? results[2].value : { payouts: [] };
+    results[2].status === "fulfilled" && results[2].value
+      ? results[2].value
+      : { payouts: [] };
   const usersData =
-    results[3].status === "fulfilled" ? results[3].value : { users: [] };
+    results[3].status === "fulfilled" && results[3].value
+      ? results[3].value
+      : { users: [] };
   const leadersData =
-    results[4].status === "fulfilled" ? results[4].value : { patients: [], doctors: [] };
-  const settings = results[5].status === "fulfilled" ? results[5].value : null;
-  const analytics = results[6].status === "fulfilled" ? results[6].value : {};
+    results[4].status === "fulfilled" && results[4].value
+      ? results[4].value
+      : { patients: [], doctors: [] };
+  const settings =
+    results[5].status === "fulfilled" && results[5].value
+      ? results[5].value
+      : null;
+  const analytics =
+    results[6].status === "fulfilled" && results[6].value
+      ? results[6].value
+      : {};
 
   return (
     <>

@@ -88,7 +88,7 @@ export function PendingPayouts({ payouts }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {payouts.length === 0 ? (
+          {!payouts || payouts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No pending payout requests at this time.
             </div>

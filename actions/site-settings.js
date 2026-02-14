@@ -20,10 +20,9 @@ export async function getSiteSettings() {
 
 export async function updateSiteSettings(formData) {
   const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const user = data.user;
 
   const settings = Object.fromEntries(formData.entries());
   await ensure();
@@ -40,10 +39,9 @@ export async function updateSiteSettings(formData) {
 export async function uploadSiteAsset(formData) {
   const supabase = await supabaseServer();
   const admin = supabaseAdmin();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const user = data.user;
 
   const bucket = "site";
   await admin.storage.createBucket(bucket).catch(() => {});
