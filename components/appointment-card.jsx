@@ -214,7 +214,12 @@ export function AppointmentCard({
         `/video-call?sessionId=${tokenData.videoSessionId}&token=${tokenData.token}&appointmentId=${appointment.id}`
       );
     } else if (tokenData?.error) {
-      toast.error(tokenData.error);
+      if (tokenData.error === "Video service not configured") {
+        const sessionId = appointment.videoSessionId || appointment.id;
+        router.push(`/video-call?sessionId=${sessionId}&error=not_configured`);
+      } else {
+        toast.error(tokenData.error);
+      }
       setAction(null);
     }
   }, [tokenData, appointment.id, router]);
