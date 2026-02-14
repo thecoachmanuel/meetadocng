@@ -222,6 +222,7 @@ export function AppointmentCard({
   // Determine other party information based on user role
   const otherParty =
     userRole === "DOCTOR" ? appointment.patient : appointment.doctor;
+  const displayName = otherParty?.name || (otherParty?.email ? otherParty.email.split("@")[0] : "Unknown");
 
   const otherPartyLabel = userRole === "DOCTOR" ? "Patient" : "Doctor";
   const otherPartyIcon = userRole === "DOCTOR" ? <User /> : <Stethoscope />;
@@ -237,9 +238,7 @@ export function AppointmentCard({
               </div>
               <div>
                 <h3 className="font-medium text-white text-base md:text-lg">
-                  {userRole === "DOCTOR"
-                    ? otherParty.name
-                    : `Dr. ${otherParty.name}`}
+                  {userRole === "DOCTOR" ? displayName : `Dr. ${displayName}`}
                 </h3>
                 {userRole === "DOCTOR" && (
                   <p className="text-xs md:text-sm text-muted-foreground">
@@ -335,9 +334,7 @@ export function AppointmentCard({
                 </div>
                 <div>
                   <p className="text-white font-medium">
-                    {userRole === "DOCTOR"
-                      ? otherParty.name
-                      : `Dr. ${otherParty.name}`}
+                    {userRole === "DOCTOR" ? displayName : `Dr. ${displayName}`}
                   </p>
                   {userRole === "DOCTOR" && (
                     <p className="text-muted-foreground text-sm">
