@@ -17,7 +17,7 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
   const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const router = useRouter();
   const [localToken, setLocalToken] = useState(null);
-  const [requesting, setRequesting] = useState(false);
+  const [requesting, setRequesting] = useState(!userToken && !!callId && !!userId && !!apiKey);
 
   const tokenToUse = userToken || localToken;
 
@@ -79,11 +79,20 @@ export default function VideoCall({ callId, userToken, userId, userName, error }
   if (!callId || !userId || (!userToken && !localToken && !requesting)) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">Invalid Video Call</h1>
-        <p className="text-muted-foreground mb-6">Missing required parameters for the video call.</p>
-        <Button onClick={() => router.push("/appointments")} className="bg-emerald-600 hover:bg-emerald-700">
-          Back to Appointments
-        </Button>
+        {requesting ? (
+          <>
+            <h1 className="text-3xl font-bold text-white mb-4">Initializing Video Call</h1>
+            <p className="text-muted-foreground mb-6">Fetching secure token…</p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold text-white mb-4">Invalid Video Call</h1>
+            <p className="text-muted-foreground mb-6">Missing required parameters for the video call.</p>
+            <Button onClick={() => router.push("/appointments")} className="bg-emerald-600 hover:bg-emerald-700">
+              Back to Appointments
+            </Button>
+          </>
+        )}
       </div>
     );
   }
