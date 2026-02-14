@@ -214,14 +214,12 @@ export function AppointmentCard({
         `/video-call?sessionId=${tokenData.videoSessionId}&token=${tokenData.token}&appointmentId=${appointment.id}`
       );
     } else if (tokenData?.error) {
-      if (
-        tokenData.error === "Video service not configured" ||
-        String(tokenData.error).toLowerCase().includes("secret")
-      ) {
-        const sessionId = appointment.videoSessionId || appointment.id;
+      const msg = String(tokenData.error).toLowerCase();
+      const sessionId = appointment.videoSessionId || appointment.id;
+      if (msg.includes("not configured") || msg.includes("secret")) {
         router.push(`/video-call?sessionId=${sessionId}&appointmentId=${appointment.id}&error=not_configured`);
       } else {
-        toast.error(tokenData.error);
+        router.push(`/video-call?sessionId=${sessionId}&appointmentId=${appointment.id}&error=token_failed`);
       }
       setAction(null);
     }
