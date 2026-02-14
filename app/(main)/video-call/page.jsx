@@ -1,4 +1,4 @@
-import CompleteWebRTC from "./complete-webrtc";
+import DebugVideo from "./debug-video";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -33,7 +33,7 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <CompleteWebRTC
+    <DebugVideo
       callId={sessionId}
       userId={user.id}
       userName={user.name || user.email?.split("@")[0] || "User"}
