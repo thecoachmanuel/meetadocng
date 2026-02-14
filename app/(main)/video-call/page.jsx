@@ -12,6 +12,7 @@ export default async function VideoCallPage({ searchParams }) {
   let serverToken = token;
   let serverError = error;
 
+  // If no token and no error, generate token server-side
   if (!serverToken && !serverError && sessionId && user?.id) {
     const fd = new FormData();
     fd.append("appointmentId", params?.appointmentId || sessionId);
