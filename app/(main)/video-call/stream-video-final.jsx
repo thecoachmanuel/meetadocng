@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { StreamChat } from "stream-chat";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 import {
   StreamVideo,
@@ -31,6 +32,10 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
   const [chatChannel, setChatChannel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasDesktopUnread, setHasDesktopUnread] = useState(false);
+  const [isRemoteTyping, setIsRemoteTyping] = useState(false);
 
   const isDoctor = userRole === "DOCTOR";
   const localRoleLabel = isDoctor ? "Doctor (you)" : "Patient (you)";
@@ -54,7 +59,7 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
     const client = StreamChat.getInstance(apiKey);
 
     const setupChat = async () => {
-      let subscription;
+      const subscriptions = [];
       try {
         await client.connectUser({ id: userId, name: userName }, userToken);
 
@@ -74,17 +79,42 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
         setChatChannel(channel);
         setMessages(channel.state?.messages || []);
 
-        subscription = channel.on("message.new", (event) => {
-          if (!event.message) return;
-          setMessages((prev) => [...prev, event.message]);
-        });
+        subscriptions.push(
+          channel.on("message.new", (event) => {
+            if (!event.message) return;
+            setMessages((prev) => [...prev, event.message]);
+            if (event.message.user?.id !== userId) {
+              setUnreadCount((prev) => prev + 1);
+              setHasDesktopUnread(true);
+              setIsRemoteTyping(false);
+            }
+          })
+        );
+
+        subscriptions.push(
+          channel.on("typing.start", (event) => {
+            if (event.user?.id && event.user.id !== userId) {
+              setIsRemoteTyping(true);
+            }
+          })
+        );
+
+        subscriptions.push(
+          channel.on("typing.stop", (event) => {
+            if (event.user?.id && event.user.id !== userId) {
+              setIsRemoteTyping(false);
+            }
+          })
+        );
       } catch (error) {
         console.error("Failed to initialize chat:", error);
       }
       return () => {
-        if (subscription) {
-          subscription.unsubscribe();
-        }
+        subscriptions.forEach((sub) => {
+          if (sub && typeof sub.unsubscribe === "function") {
+            sub.unsubscribe();
+          }
+        });
       };
     };
 
@@ -98,12 +128,22 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
     return () => {
       cancelled = true;
       setChatChannel(null);
+      setUnreadCount(0);
+      setHasDesktopUnread(false);
+      setIsRemoteTyping(false);
       if (typeof cleanup === "function") {
         cleanup();
       }
       client.disconnectUser().catch(() => undefined);
     };
   }, [apiKey, userToken, userId, userName, callId]);
+
+  useEffect(() => {
+    if (isMobileChatOpen) {
+      setUnreadCount(0);
+      setHasDesktopUnread(false);
+    }
+  }, [isMobileChatOpen]);
 
   const toggleVideo = async () => {
     if (call) {
@@ -202,6 +242,24 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
             </span>
           </div>
         </div>
+        <div className="flex sm:hidden mt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto border-emerald-800 bg-slate-950/70 text-xs text-slate-100 hover:bg-slate-900"
+            onClick={() => setIsMobileChatOpen(true)}
+            disabled={!chatChannel}
+          >
+            <span className="flex items-center gap-1">
+              <span>Open chat</span>
+              {unreadCount > 0 && (
+                <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 text-[10px] leading-none px-1">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row gap-4">
@@ -238,7 +296,9 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
             )}
 
             {localParticipant && (
-              <div className="absolute top-4 right-4 sm:bottom-4 sm:right-4 sm:top-auto w-28 h-40 sm:w-40 sm:h-56 rounded-lg overflow-hidden border border-gray-700 bg-gray-900/70 shadow-lg">
+              <div className={`absolute top-4 right-4 sm:bottom-4 sm:right-4 sm:top-auto w-28 h-40 sm:w-40 sm:h-56 rounded-lg overflow-hidden border bg-gray-900/70 shadow-lg ${
+                isDoctor ? "border-blue-700" : "border-emerald-700"
+              }`}>
                 <ParticipantView
                   participant={localParticipant}
                   className="w-full h-full object-cover"
@@ -253,7 +313,12 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
 
         <div className="hidden lg:flex w-80 flex-col rounded-lg border border-emerald-900/30 bg-slate-950/80">
           <div className="border-b border-emerald-900/40 px-3 py-2">
-            <p className="text-sm font-medium text-white">Doctor–Patient Chat</p>
+            <p className="text-sm font-medium text-white flex items-center gap-2">
+              <span>Doctor–Patient Chat</span>
+              {hasDesktopUnread && (
+                <span className="h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </p>
             <p className="text-[11px] text-slate-400">Chat is only visible to participants in this consultation.</p>
           </div>
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-sm">
@@ -267,19 +332,48 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
               return (
                 <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-lg px-2 py-1 text-xs ${
-                    isOwn ? "bg-emerald-700/80 text-white" : "bg-slate-800 text-slate-50"
+                    isOwn
+                      ? isDoctor
+                        ? "bg-blue-700/80 text-white"
+                        : "bg-emerald-700/80 text-white"
+                      : isDoctor
+                        ? "bg-emerald-800 text-emerald-50"
+                        : "bg-blue-800 text-blue-50"
                   }`}>
-                    <div className="text-[10px] text-emerald-200 mb-0.5">{label}</div>
+                    <div className="text-[10px] mb-0.5">
+                      <span className={
+                        isOwn
+                          ? isDoctor
+                            ? "text-blue-200"
+                            : "text-emerald-200"
+                          : isDoctor
+                            ? "text-emerald-200"
+                            : "text-blue-200"
+                      }>
+                        {label}
+                      </span>
+                    </div>
                     <div className="break-words">{message.text}</div>
                   </div>
                 </div>
               );
             })}
+            {isRemoteTyping && (
+              <p className="mt-1 text-[11px] text-slate-400">{remoteRoleLabel} is typing…</p>
+            )}
           </div>
           <div className="border-t border-emerald-900/40 px-3 py-2 flex items-center gap-2">
             <input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={async (e) => {
+                setNewMessage(e.target.value);
+                if (chatChannel) {
+                  try {
+                    await chatChannel.keystroke();
+                  } catch {
+                  }
+                }
+              }}
               onKeyDown={async (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -288,6 +382,7 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
                   setNewMessage("");
                   try {
                     await chatChannel.sendMessage({ text });
+                    setHasDesktopUnread(false);
                   } catch (error) {
                     console.error("Failed to send message:", error);
                     toast.error("Failed to send message");
@@ -319,6 +414,107 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
           </div>
         </div>
       </div>
+
+      <Dialog open={isMobileChatOpen} onOpenChange={setIsMobileChatOpen}>
+        <DialogContent className="sm:max-w-md bg-slate-950 border border-emerald-900">
+          <DialogHeader>
+            <DialogTitle className="text-sm text-white">Doctor–Patient Chat</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col h-72">
+            <div className="flex-1 overflow-y-auto px-1 py-1 space-y-1 text-sm">
+              {messages.length === 0 && (
+                <p className="text-xs text-slate-500 mt-1">No messages yet. Start the conversation here.</p>
+              )}
+              {messages.map((message) => {
+                const isOwn = message.user?.id === userId;
+                const label = isOwn ? localRoleLabel : remoteRoleLabel;
+
+                return (
+                  <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] rounded-lg px-2 py-1 text-xs ${
+                      isOwn
+                        ? isDoctor
+                          ? "bg-blue-700/80 text-white"
+                          : "bg-emerald-700/80 text-white"
+                        : isDoctor
+                          ? "bg-emerald-800 text-emerald-50"
+                          : "bg-blue-800 text-blue-50"
+                    }`}>
+                      <div className="text-[10px] mb-0.5">
+                        <span className={
+                          isOwn
+                            ? isDoctor
+                              ? "text-blue-200"
+                              : "text-emerald-200"
+                            : isDoctor
+                              ? "text-emerald-200"
+                              : "text-blue-200"
+                        }>
+                          {label}
+                        </span>
+                      </div>
+                      <div className="break-words">{message.text}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            {isRemoteTyping && (
+              <p className="mt-1 text-[11px] text-slate-400">{remoteRoleLabel} is typing…</p>
+            )}
+            </div>
+            <div className="border-t border-emerald-900/40 px-2 py-2 flex items-center gap-2">
+              <input
+                value={newMessage}
+              onChange={async (e) => {
+                setNewMessage(e.target.value);
+                if (chatChannel) {
+                  try {
+                    await chatChannel.keystroke();
+                  } catch {
+                  }
+                }
+              }}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!chatChannel || !newMessage.trim()) return;
+                    const text = newMessage.trim();
+                    setNewMessage("");
+                    try {
+                      await chatChannel.sendMessage({ text });
+                    } catch (error) {
+                      console.error("Failed to send message:", error);
+                      toast.error("Failed to send message");
+                    }
+                  }
+                }}
+                placeholder="Type a message"
+                className="flex-1 bg-slate-900/80 border border-slate-700 rounded-md px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                disabled={!chatChannel}
+              />
+              <Button
+                type="button"
+                size="sm"
+                className="px-3 py-1 rounded-md bg-emerald-600 text-xs font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={!chatChannel || !newMessage.trim()}
+                onClick={async () => {
+                  if (!chatChannel || !newMessage.trim()) return;
+                  const text = newMessage.trim();
+                  setNewMessage("");
+                  try {
+                    await chatChannel.sendMessage({ text });
+                  } catch (error) {
+                    console.error("Failed to send message:", error);
+                    toast.error("Failed to send message");
+                  }
+                }}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="mt-4 p-3 md:p-4 flex flex-wrap items-center justify-center gap-3 bg-muted/30 border border-emerald-900/30 rounded-lg">
         <button
