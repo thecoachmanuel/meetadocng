@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { StreamChat } from "stream-chat";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
+// Import Stream.io React SDK
 import {
   StreamVideo,
   StreamVideoClient,
@@ -14,32 +13,24 @@ import {
   useCall,
   useCallStateHooks,
   ParticipantView,
-  CallingState,
-} from "@stream-io/video-react-sdk";
+  CallingState
+} from '@stream-io/video-react-sdk';
 
-function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) {
-  const router = useRouter();
+// Stream.io configuration
+const API_KEY = "kdpvyx9sdeqt";
+
+// Custom hook for Stream.io video calling
+function VideoCallUI({ userId, userName, callId }) {
   const call = useCall();
   const { useCallCallingState, useLocalParticipant, useRemoteParticipants } = useCallStateHooks();
-
+  
   const callingState = useCallCallingState();
   const localParticipant = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
-
+  
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
-  const [chatChannel, setChatChannel] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [hasDesktopUnread, setHasDesktopUnread] = useState(false);
-  const [isRemoteTyping, setIsRemoteTyping] = useState(false);
-
-  const isDoctor = userRole === "DOCTOR";
-  const localRoleLabel = isDoctor ? "Doctor (you)" : "Patient (you)";
-  const remoteRoleLabel = isDoctor ? "Patient" : "Doctor";
 
   useEffect(() => {
     if (callingState === CallingState.JOINED) {
@@ -51,99 +42,6 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
       toast.info("Left the video consultation");
     }
   }, [callingState]);
-
-  useEffect(() => {
-    if (!apiKey || !userToken || !userId) return;
-
-    let cancelled = false;
-    const client = StreamChat.getInstance(apiKey);
-
-    const setupChat = async () => {
-      const subscriptions = [];
-      try {
-        await client.connectUser({ id: userId, name: userName }, userToken);
-
-        if (cancelled) return;
-
-        const channel = client.channel("messaging", `call-${callId}`, {
-          members: [userId],
-        });
-
-        await channel.watch();
-
-        if (cancelled) {
-          await client.disconnectUser();
-          return;
-        }
-
-        setChatChannel(channel);
-        setMessages(channel.state?.messages || []);
-
-        subscriptions.push(
-          channel.on("message.new", (event) => {
-            if (!event.message) return;
-            setMessages((prev) => [...prev, event.message]);
-            if (event.message.user?.id !== userId) {
-              setUnreadCount((prev) => prev + 1);
-              setHasDesktopUnread(true);
-              setIsRemoteTyping(false);
-            }
-          })
-        );
-
-        subscriptions.push(
-          channel.on("typing.start", (event) => {
-            if (event.user?.id && event.user.id !== userId) {
-              setIsRemoteTyping(true);
-            }
-          })
-        );
-
-        subscriptions.push(
-          channel.on("typing.stop", (event) => {
-            if (event.user?.id && event.user.id !== userId) {
-              setIsRemoteTyping(false);
-            }
-          })
-        );
-      } catch (error) {
-        console.error("Failed to initialize chat:", error);
-      }
-      return () => {
-        subscriptions.forEach((sub) => {
-          if (sub && typeof sub.unsubscribe === "function") {
-            sub.unsubscribe();
-          }
-        });
-      };
-    };
-
-    let cleanup;
-    setupChat()
-      .then((fn) => {
-        cleanup = fn;
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-      setChatChannel(null);
-      setUnreadCount(0);
-      setHasDesktopUnread(false);
-      setIsRemoteTyping(false);
-      if (typeof cleanup === "function") {
-        cleanup();
-      }
-      client.disconnectUser().catch(() => undefined);
-    };
-  }, [apiKey, userToken, userId, userName, callId]);
-
-  useEffect(() => {
-    if (isMobileChatOpen) {
-      setUnreadCount(0);
-      setHasDesktopUnread(false);
-    }
-  }, [isMobileChatOpen]);
 
   const toggleVideo = async () => {
     if (call) {
@@ -171,43 +69,20 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
     }
   };
 
-  const handleEndCall = async () => {
-    try {
-      if (call) {
-        try {
-          if (!isVideoMuted) {
-            await call.camera.toggle();
-          }
-        } catch (error) {
-          console.error("Failed to disable camera on end call:", error);
-        }
-
-        try {
-          if (!isAudioMuted) {
-            await call.microphone.toggle();
-          }
-        } catch (error) {
-          console.error("Failed to mute microphone on end call:", error);
-        }
-
-        setIsVideoMuted(true);
-        setIsAudioMuted(true);
-
-        try {
-          await call.leave();
-        } catch (error) {
-          console.error("Failed to leave call:", error);
-        }
+  const leaveCall = async () => {
+    if (call) {
+      try {
+        await call.leave();
+      } catch (error) {
+        console.error("Failed to leave call:", error);
       }
-    } finally {
-      router.push("/appointments");
     }
   };
 
   if (isConnecting) {
     return (
-      <div className="container mx-auto px-4 py-10 md:py-12 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Connecting to Video Consultation</h1>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h1 className="text-3xl font-bold text-white mb-4">Connecting to Video Consultation</h1>
         <p className="text-muted-foreground mb-6">Setting up your secure video call...</p>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto"></div>
         <div className="mt-4 bg-gray-800 rounded-lg p-3 max-w-md mx-auto">
@@ -219,441 +94,172 @@ function VideoCallUI({ userId, userName, callId, userRole, apiKey, userToken }) 
   }
 
   return (
-    <div className="container mx-auto px-4 py-4 md:py-6 h-[100dvh] flex flex-col">
-      <div className="flex items-center justify-between mb-4 md:mb-6 gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">Video Consultation</h1>
-          <p className="text-muted-foreground text-sm md:text-base">Powered by Stream.io Professional Video</p>
-          <p className="text-sm text-emerald-400 mt-1">Connected as {userName}</p>
-          <p className="text-xs md:text-sm text-emerald-300 mt-1">
-            {isDoctor ? "You are joining as the doctor" : "You are joining as the patient"}
-          </p>
-        </div>
-        <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground gap-2">
-          <span className="bg-emerald-600/20 text-emerald-300 px-2 py-1 rounded-md border border-emerald-700/40">
-            {remoteParticipants.length + 1} participant{remoteParticipants.length ? "s" : ""}
+    <div className="container mx-auto px-4 py-8 h-screen flex flex-col">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold text-white mb-2">Video Consultation</h1>
+        <p className="text-muted-foreground">Powered by Stream.io Professional Video</p>
+        <p className="text-sm text-emerald-400 mt-2">Connected as {userName}</p>
+        <div className="mt-2">
+          <span className="bg-emerald-600 text-white px-2 py-1 rounded text-xs">
+            {remoteParticipants.length + 1} Participants
           </span>
-          <div className="flex gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-slate-900/80 border border-slate-700 text-[11px] text-slate-200">
-              {localRoleLabel}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-900/80 border border-slate-700 text-[11px] text-slate-200">
-              {remoteRoleLabel}
-            </span>
-          </div>
-        </div>
-        <div className="flex sm:hidden mt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto border-emerald-800 bg-slate-950/70 text-xs text-slate-100 hover:bg-slate-900"
-            onClick={() => setIsMobileChatOpen(true)}
-            disabled={!chatChannel}
-          >
-            <span className="flex items-center gap-1">
-              <span>Open chat</span>
-              {unreadCount > 0 && (
-                <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 text-[10px] leading-none px-1">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </span>
-          </Button>
         </div>
       </div>
-
-      <div className="flex-1 flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 rounded-lg overflow-hidden border border-emerald-900/30 bg-black">
-          <div className="relative w-full h-full">
+      
+      <div className="flex-1 rounded-lg overflow-hidden border border-emerald-900/20 bg-gray-900">
+        <div className="h-full flex flex-col lg:flex-row">
+          {/* Remote Participants (Main View) */}
+          <div className="flex-1 relative bg-gray-800">
             {remoteParticipants.length > 0 ? (
-              <div className="grid gap-2 p-2 h-full w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="h-full grid gap-2 p-2">
                 {remoteParticipants.map((participant) => (
-                  <div key={participant.userId} className="relative bg-gray-900 rounded-lg overflow-hidden">
+                  <div key={participant.userId} className="relative h-full">
                     <ParticipantView
                       participant={participant}
-                      className="w-full h-full min-h-[160px] sm:min-h-[200px] md:min-h-[260px] object-cover"
+                      className="w-full h-full object-cover rounded-lg"
                     />
-                    <div className="absolute bottom-2 left-2 bg-black/60 rounded px-2 py-1">
-                      <p className="text-white text-xs font-medium">
-                        {`${remoteRoleLabel}: ${participant.name || "Participant"}`}
-                      </p>
+                    <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
+                      <p className="text-white text-xs">{participant.name || 'Participant'}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center px-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-emerald-600 rounded-full flex items-center justify-center mb-4 mx-auto">
-                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-emerald-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <p className="text-white font-medium text-base sm:text-lg">Waiting for participant...</p>
-                  <p className="text-gray-400 text-sm mt-2">Remote video will appear here once they join</p>
-                </div>
-              </div>
-            )}
-
-            {localParticipant && (
-              <div className={`absolute top-4 right-4 sm:bottom-4 sm:right-4 sm:top-auto w-28 h-40 sm:w-40 sm:h-56 rounded-lg overflow-hidden border bg-gray-900/70 shadow-lg ${
-                isDoctor ? "border-blue-700" : "border-emerald-700"
-              }`}>
-                <ParticipantView
-                  participant={localParticipant}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-1 left-1 bg-black/60 rounded px-2 py-0.5">
-                  <p className="text-white text-[10px] font-medium">{localRoleLabel}</p>
+                  <p className="text-white font-medium">Waiting for participant...</p>
+                  <p className="text-gray-400 text-sm mt-2">Remote video will appear here</p>
                 </div>
               </div>
             )}
           </div>
-        </div>
-
-        <div className="hidden lg:flex w-80 flex-col rounded-lg border border-emerald-900/30 bg-slate-950/80">
-          <div className="border-b border-emerald-900/40 px-3 py-2">
-            <p className="text-sm font-medium text-white flex items-center gap-2">
-              <span>Doctor–Patient Chat</span>
-              {hasDesktopUnread && (
-                <span className="h-2 w-2 rounded-full bg-red-500" />
-              )}
-            </p>
-            <p className="text-[11px] text-slate-400">Chat is only visible to participants in this consultation.</p>
-          </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-sm">
-            {messages.length === 0 && (
-              <p className="text-xs text-slate-500 mt-1">No messages yet. Start the conversation here.</p>
-            )}
-            {messages.map((message) => {
-              const isOwn = message.user?.id === userId;
-              const label = isOwn ? localRoleLabel : remoteRoleLabel;
-
-              return (
-                <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-lg px-2 py-1 text-xs ${
-                    isOwn
-                      ? isDoctor
-                        ? "bg-blue-700/80 text-white"
-                        : "bg-emerald-700/80 text-white"
-                      : isDoctor
-                        ? "bg-emerald-800 text-emerald-50"
-                        : "bg-blue-800 text-blue-50"
-                  }`}>
-                    <div className="text-[10px] mb-0.5">
-                      <span className={
-                        isOwn
-                          ? isDoctor
-                            ? "text-blue-200"
-                            : "text-emerald-200"
-                          : isDoctor
-                            ? "text-emerald-200"
-                            : "text-blue-200"
-                      }>
-                        {label}
-                      </span>
-                    </div>
-                    <div className="break-words">{message.text}</div>
+          
+          {/* Local Participant (Picture-in-Picture) */}
+          <div className="lg:w-80 lg:border-l border-emerald-900/20 p-4 bg-gray-900">
+            <div className="relative">
+              {localParticipant && (
+                <>
+                  <ParticipantView
+                    participant={localParticipant}
+                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
+                    <p className="text-white text-xs">You</p>
                   </div>
-                </div>
-              );
-            })}
-            {isRemoteTyping && (
-              <p className="mt-1 text-[11px] text-slate-400">{remoteRoleLabel} is typing…</p>
-            )}
-          </div>
-          <div className="border-t border-emerald-900/40 px-3 py-2 flex items-center gap-2">
-            <input
-              value={newMessage}
-              onChange={async (e) => {
-                setNewMessage(e.target.value);
-                if (chatChannel) {
-                  try {
-                    await chatChannel.keystroke();
-                  } catch {
-                  }
-                }
-              }}
-              onKeyDown={async (e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (!chatChannel || !newMessage.trim()) return;
-                  const text = newMessage.trim();
-                  setNewMessage("");
-                  try {
-                    await chatChannel.sendMessage({ text });
-                    setHasDesktopUnread(false);
-                  } catch (error) {
-                    console.error("Failed to send message:", error);
-                    toast.error("Failed to send message");
-                  }
-                }
-              }}
-              placeholder="Type a message"
-              className="flex-1 bg-slate-900/80 border border-slate-700 rounded-md px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              disabled={!chatChannel}
-            />
-            <button
-              type="button"
-              className="px-3 py-1 rounded-md bg-emerald-600 text-xs font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!chatChannel || !newMessage.trim()}
-              onClick={async () => {
-                if (!chatChannel || !newMessage.trim()) return;
-                const text = newMessage.trim();
-                setNewMessage("");
-                try {
-                  await chatChannel.sendMessage({ text });
-                } catch (error) {
-                  console.error("Failed to send message:", error);
-                  toast.error("Failed to send message");
-                }
-              }}
-            >
-              Send
-            </button>
+                </>
+              )}
+              
+              {/* Video Controls */}
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={toggleVideo}
+                  className={`p-2 rounded-full ${isVideoMuted ? 'bg-red-600' : 'bg-gray-800'} text-white hover:opacity-80 transition-opacity`}
+                  title={isVideoMuted ? 'Turn on camera' : 'Turn off camera'}
+                >
+                  {isVideoMuted ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={toggleAudio}
+                  className={`p-2 rounded-full ${isAudioMuted ? 'bg-red-600' : 'bg-gray-800'} text-white hover:opacity-80 transition-opacity`}
+                  title={isAudioMuted ? 'Turn on microphone' : 'Turn off microphone'}
+                >
+                  {isAudioMuted ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      <Dialog open={isMobileChatOpen} onOpenChange={setIsMobileChatOpen}>
-        <DialogContent className="sm:max-w-md bg-slate-950 border border-emerald-900">
-          <DialogHeader>
-            <DialogTitle className="text-sm text-white">Doctor–Patient Chat</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col h-72">
-            <div className="flex-1 overflow-y-auto px-1 py-1 space-y-1 text-sm">
-              {messages.length === 0 && (
-                <p className="text-xs text-slate-500 mt-1">No messages yet. Start the conversation here.</p>
-              )}
-              {messages.map((message) => {
-                const isOwn = message.user?.id === userId;
-                const label = isOwn ? localRoleLabel : remoteRoleLabel;
-
-                return (
-                  <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-lg px-2 py-1 text-xs ${
-                      isOwn
-                        ? isDoctor
-                          ? "bg-blue-700/80 text-white"
-                          : "bg-emerald-700/80 text-white"
-                        : isDoctor
-                          ? "bg-emerald-800 text-emerald-50"
-                          : "bg-blue-800 text-blue-50"
-                    }`}>
-                      <div className="text-[10px] mb-0.5">
-                        <span className={
-                          isOwn
-                            ? isDoctor
-                              ? "text-blue-200"
-                              : "text-emerald-200"
-                            : isDoctor
-                              ? "text-emerald-200"
-                              : "text-blue-200"
-                        }>
-                          {label}
-                        </span>
-                      </div>
-                      <div className="break-words">{message.text}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            {isRemoteTyping && (
-              <p className="mt-1 text-[11px] text-slate-400">{remoteRoleLabel} is typing…</p>
-            )}
-            </div>
-            <div className="border-t border-emerald-900/40 px-2 py-2 flex items-center gap-2">
-              <input
-                value={newMessage}
-              onChange={async (e) => {
-                setNewMessage(e.target.value);
-                if (chatChannel) {
-                  try {
-                    await chatChannel.keystroke();
-                  } catch {
-                  }
-                }
-              }}
-                onKeyDown={async (e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!chatChannel || !newMessage.trim()) return;
-                    const text = newMessage.trim();
-                    setNewMessage("");
-                    try {
-                      await chatChannel.sendMessage({ text });
-                    } catch (error) {
-                      console.error("Failed to send message:", error);
-                      toast.error("Failed to send message");
-                    }
-                  }
-                }}
-                placeholder="Type a message"
-                className="flex-1 bg-slate-900/80 border border-slate-700 rounded-md px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                disabled={!chatChannel}
-              />
-              <Button
-                type="button"
-                size="sm"
-                className="px-3 py-1 rounded-md bg-emerald-600 text-xs font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                disabled={!chatChannel || !newMessage.trim()}
-                onClick={async () => {
-                  if (!chatChannel || !newMessage.trim()) return;
-                  const text = newMessage.trim();
-                  setNewMessage("");
-                  try {
-                    await chatChannel.sendMessage({ text });
-                  } catch (error) {
-                    console.error("Failed to send message:", error);
-                    toast.error("Failed to send message");
-                  }
-                }}
-              >
-                Send
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <div className="mt-4 p-3 md:p-4 flex flex-wrap items-center justify-center gap-3 bg-muted/30 border border-emerald-900/30 rounded-lg">
-        <button
-          onClick={toggleAudio}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            isAudioMuted ? "bg-red-600 text-white" : "bg-gray-900 text-white"
-          }`}
-          title={isAudioMuted ? "Turn on microphone" : "Turn off microphone"}
+      
+      {/* Call Controls */}
+      <div className="p-4 flex items-center justify-center bg-muted/30 border-t border-emerald-900/20">
+        <button 
+          onClick={leaveCall} 
+          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium"
         >
-          {isAudioMuted ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          )}
-          <span>{isAudioMuted ? "Unmute" : "Mute"}</span>
-        </button>
-
-        <button
-          onClick={toggleVideo}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            isVideoMuted ? "bg-red-600 text-white" : "bg-gray-900 text-white"
-          }`}
-          title={isVideoMuted ? "Turn on camera" : "Turn off camera"}
-        >
-          {isVideoMuted ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          )}
-          <span>{isVideoMuted ? "Start video" : "Stop video"}</span>
-        </button>
-
-        <button
-          onClick={handleEndCall}
-          className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9l-2-2m0 0l2-2m-2 2h8m-3 13a9 9 0 110-18 9 9 0 010 18z" />
-          </svg>
-          <span>End call</span>
+          End Call
         </button>
       </div>
     </div>
   );
 }
 
-export default function StreamVideoFinal({ callId, userId, userName, userRole }) {
+// Main component that wraps everything with Stream.io providers
+export default function StreamVideoFinal({ callId, userId, userName }) {
   const router = useRouter();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [apiKey, setApiKey] = useState(null);
-  const [userToken, setUserToken] = useState(null);
 
   useEffect(() => {
-    let activeClient = null;
-    let activeCall = null;
-    let cancelled = false;
-
     const initializeStream = async () => {
       try {
         setIsInitializing(true);
-
+        
+        // Create user object
         const user = {
           id: userId,
           name: userName,
           image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,
         };
 
-        const tokenResponse = await fetch("/api/stream/token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            callId: String(callId),
-            userId: String(userId),
-            userName,
-          }),
-        });
+        // Generate token (in production, this should come from your backend)
+        const token = `stream_token_${userId}_${callId}_${Date.now()}`;
 
-        if (!tokenResponse.ok) {
-          const data = await tokenResponse.json().catch(() => ({}));
-          throw new Error(data.error || "Failed to obtain video token");
-        }
-
-        const { token, apiKey: receivedApiKey } = await tokenResponse.json();
-
-        activeClient = new StreamVideoClient({
-          apiKey: receivedApiKey,
+        // Create StreamVideoClient
+        const streamClient = new StreamVideoClient({
+          apiKey: API_KEY,
           user,
           token,
         });
 
-        activeCall = activeClient.call("default", String(callId));
-        await activeCall.join({ create: true });
+        // Create and join call
+        const streamCall = streamClient.call('default', callId);
+        await streamCall.join({ create: true });
 
-        if (cancelled) {
-          await activeCall.leave().catch(() => undefined);
-          await activeClient.disconnectUser().catch(() => undefined);
-          return;
-        }
-
-        setClient(activeClient);
-        setCall(activeCall);
-        setApiKey(receivedApiKey);
-        setUserToken(token);
+        setClient(streamClient);
+        setCall(streamCall);
         setIsInitializing(false);
-
+        
         toast.success("Connected to Stream.io video service!");
+        
       } catch (error) {
         console.error("Failed to initialize Stream.io:", error);
-        const message = error && typeof error.message === "string"
-          ? error.message
-          : "Failed to connect to video service";
-        setErrorMessage(message);
-        toast.error(message);
+        toast.error("Failed to connect to video service");
         setIsInitializing(false);
       }
     };
 
     initializeStream();
 
+    // Cleanup
     return () => {
-      cancelled = true;
-      if (activeCall) {
-        activeCall.leave().catch(() => undefined);
+      if (call) {
+        call.leave().catch(console.error);
       }
-      if (activeClient) {
-        activeClient.disconnectUser().catch(() => undefined);
+      if (client) {
+        client.disconnectUser();
       }
     };
   }, [callId, userId, userName]);
@@ -684,10 +290,7 @@ export default function StreamVideoFinal({ callId, userId, userName, userRole })
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-3xl font-bold text-white mb-4">Connection Failed</h1>
-        <p className="text-muted-foreground mb-2">Unable to connect to Stream.io video service.</p>
-        {errorMessage && (
-          <p className="text-xs text-red-300 mb-4 break-words max-w-xl mx-auto">{errorMessage}</p>
-        )}
+        <p className="text-muted-foreground mb-6">Unable to connect to Stream.io video service.</p>
         <div className="space-y-4">
           <Button onClick={() => window.location.reload()} className="bg-emerald-600 hover:bg-emerald-700">
             Try Again
@@ -706,10 +309,7 @@ export default function StreamVideoFinal({ callId, userId, userName, userRole })
         <VideoCallUI 
           callId={callId} 
           userId={userId} 
-          userName={userName}
-          userRole={userRole}
-          apiKey={apiKey}
-          userToken={userToken}
+          userName={userName} 
         />
       </StreamCall>
     </StreamVideo>
