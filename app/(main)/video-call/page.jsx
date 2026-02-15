@@ -36,6 +36,7 @@ export default async function VideoCallPage({ searchParams }) {
       callId={String(sessionId)}
       userId={String(user.id)}
       userName={user.name || user.email?.split("@")[0] || "User"}
+      userRole={user.role}
     />
   );
 }
