@@ -13,20 +13,28 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
   const [isJoining, setIsJoining] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [debugInfo, setDebugInfo] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
+
+    const addDebug = (message) => {
+      setDebugInfo((prev) => [...prev, `${new Date().toISOString()} ${message}`]);
+    };
 
     const initAndJoin = async () => {
       try {
         const rootElement = zoomRootRef.current;
         if (!rootElement) {
+          addDebug("Zoom root element not available");
           return;
         }
 
+        addDebug("Creating Zoom client");
         const client = ZoomMtgEmbedded.createClient();
         clientRef.current = client;
 
+        addDebug("Initializing Zoom client");
         await client.init({
           zoomAppRoot: rootElement,
           language: "en-US",
@@ -34,6 +42,7 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
           leaveOnPageUnload: true,
         });
 
+        addDebug("Requesting Zoom signature from API");
         const response = await fetch("/api/zoom/signature", {
           method: "POST",
           headers: {
@@ -47,11 +56,14 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
+          addDebug(`Signature API error: ${response.status} ${data.error || "Unknown error"}`);
           throw new Error(data.error || "Unable to get Zoom configuration");
         }
 
+        addDebug("Signature received from API");
         const data = await response.json();
 
+        addDebug("Joining Zoom meeting");
         await client.join({
           sdkKey: data.sdkKey,
           signature: data.signature,
@@ -62,11 +74,13 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
         });
 
         if (!cancelled) {
+          addDebug("Joined Zoom meeting successfully");
           setIsJoining(false);
         }
       } catch (error) {
         console.error("Zoom meeting error", error);
         if (!cancelled) {
+          addDebug(`Zoom meeting error: ${error?.message || String(error)}`);
           setHasError(true);
           setErrorMessage(
             "Unable to start the Zoom meeting. Please check your configuration and try again."
@@ -103,6 +117,13 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
         <p className="text-muted-foreground mb-6">
           {errorMessage}
         </p>
+        {debugInfo.length > 0 && (
+          <div className="bg-slate-950 border border-slate-800 rounded-md text-left p-3 mb-6 max-h-48 overflow-auto text-xs font-mono text-slate-200">
+            {debugInfo.map((line, index) => (
+              <div key={index}>{line}</div>
+            ))}
+          </div>
+        )}
         <div className="space-y-4">
           <Button onClick={() => window.location.reload()} className="w-full bg-emerald-600 hover:bg-emerald-700">
             Try Again
@@ -144,4 +165,3 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
     </div>
   );
 }
-
