@@ -13,9 +13,7 @@ import {
   useCall,
   useCallStateHooks,
   ParticipantView,
-  CallingState,
-  type User,
-  type StreamVideoParticipant
+  CallingState
 } from '@stream-io/video-react-sdk';
 
 // Stream.io configuration
@@ -221,7 +219,7 @@ export default function StreamVideoCalling({ callId, userId, userName }) {
         setIsInitializing(true);
         
         // Create user object
-        const user: User = {
+        const user = {
           id: userId,
           name: userName,
           image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,

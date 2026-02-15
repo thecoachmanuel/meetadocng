@@ -1,4 +1,4 @@
-import FinalWorkingVideo from "./final-working-video";
+import ZoomVideoCall from "./zoom-video-call";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -33,10 +33,11 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <FinalWorkingVideo
-      callId={sessionId}
-      userId={user.id}
+    <ZoomVideoCall
+      sessionId={sessionId}
       userName={user.name || user.email?.split("@")[0] || "User"}
+      userEmail={user.email}
+      userRole={user.role}
       error={error}
     />
   );
