@@ -1,9 +1,11 @@
 import StreamVideoFinal from "./stream-video-final";
 import { checkUser } from "@/lib/checkUser";
+import { STREAM_CONFIG } from "@/lib/stream-config";
 
 export default async function VideoCallPage({ searchParams }) {
   const params = await searchParams;
   const sessionId = params?.sessionId || params?.appointmentId;
+  const error = params?.error;
   
   const user = await checkUser();
   
@@ -32,10 +34,12 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <StreamVideoFinal
-      callId={String(sessionId)}
-      userId={String(user.id)}
-      userName={user.name || user.email?.split("@")[0] || "User"}
-    />
+		<StreamVideoFinal
+			callId={sessionId}
+			userId={user.id}
+			userName={user.name || user.email?.split("@")[0] || "User"}
+			apiKey={STREAM_CONFIG.getApiKey()}
+			token={STREAM_CONFIG.generateToken(user.id, String(sessionId))}
+		/>
   );
 }

@@ -7,17 +7,14 @@ import { toast } from "sonner";
 
 // Import Stream.io React SDK
 import {
-  StreamVideo,
-  StreamVideoClient,
-  StreamCall,
-  useCall,
-  useCallStateHooks,
-  ParticipantView,
-  CallingState
-} from '@stream-io/video-react-sdk';
-
-// Stream.io configuration
-const API_KEY = "kdpvyx9sdeqt";
+	StreamVideo,
+	StreamVideoClient,
+	StreamCall,
+	useCall,
+	useCallStateHooks,
+	ParticipantView,
+	CallingState
+} from "@stream-io/video-react-sdk";
 
 // Custom hook for Stream.io video calling
 function VideoCallUI({ userId, userName, callId }) {
@@ -206,33 +203,29 @@ function VideoCallUI({ userId, userName, callId }) {
 }
 
 // Main component that wraps everything with Stream.io providers
-export default function StreamVideoFinal({ callId, userId, userName }) {
+export default function StreamVideoFinal({ callId, userId, userName, apiKey, token }) {
   const router = useRouter();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  useEffect(() => {
+	useEffect(() => {
     const initializeStream = async () => {
       try {
         setIsInitializing(true);
         
         // Create user object
-        const user = {
-          id: userId,
-          name: userName,
-          image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,
-        };
+				const user = {
+					id: userId,
+					name: userName,
+					image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,
+				};
 
-        // Generate token (in production, this should come from your backend)
-        const token = `stream_token_${userId}_${callId}_${Date.now()}`;
-
-        // Create StreamVideoClient
-        const streamClient = new StreamVideoClient({
-          apiKey: API_KEY,
-          user,
-          token,
-        });
+				const streamClient = new StreamVideoClient({
+					apiKey,
+					user,
+					token,
+				});
 
         // Create and join call
         const streamCall = streamClient.call('default', callId);
@@ -251,7 +244,7 @@ export default function StreamVideoFinal({ callId, userId, userName }) {
       }
     };
 
-    initializeStream();
+		initializeStream();
 
     // Cleanup
     return () => {
@@ -262,7 +255,7 @@ export default function StreamVideoFinal({ callId, userId, userName }) {
         client.disconnectUser();
       }
     };
-  }, [callId, userId, userName]);
+	}, [apiKey, token, callId, userId, userName]);
 
   const handleLeaveCall = () => {
     if (call) {
