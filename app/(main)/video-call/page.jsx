@@ -1,4 +1,4 @@
-import StreamVideoWorking from "./stream-video-working";
+import WorkingVideoFinal from "./working-video-final";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
@@ -33,7 +33,7 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <StreamVideoWorking
+    <WorkingVideoFinal
       callId={sessionId}
       userId={user.id}
       userName={user.name || user.email?.split("@")[0] || "User"}
