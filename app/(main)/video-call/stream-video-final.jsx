@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-// Import Stream.io React SDK
 import {
   StreamVideo,
   StreamVideoClient,
@@ -13,11 +12,8 @@ import {
   useCall,
   useCallStateHooks,
   ParticipantView,
-  CallingState
-} from '@stream-io/video-react-sdk';
-
-// Stream.io configuration
-const API_KEY = "kdpvyx9sdeqt";
+  CallingState,
+} from "@stream-io/video-react-sdk";
 
 // Custom hook for Stream.io video calling
 function VideoCallUI({ userId, userName, callId }) {
@@ -211,42 +207,60 @@ export default function StreamVideoFinal({ callId, userId, userName }) {
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const initializeStream = async () => {
       try {
         setIsInitializing(true);
-        
-        // Create user object
+
         const user = {
           id: userId,
           name: userName,
           image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,
         };
 
-        // Generate token (in production, this should come from your backend)
-        const token = `stream_token_${userId}_${callId}_${Date.now()}`;
+        const tokenResponse = await fetch("/api/stream/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            callId: String(callId),
+            userId: String(userId),
+            userName,
+          }),
+        });
 
-        // Create StreamVideoClient
+        if (!tokenResponse.ok) {
+          const data = await tokenResponse.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to obtain video token");
+        }
+
+        const { token, apiKey } = await tokenResponse.json();
+
         const streamClient = new StreamVideoClient({
-          apiKey: API_KEY,
+          apiKey,
           user,
           token,
         });
 
-        // Create and join call
-        const streamCall = streamClient.call('default', callId);
+        const streamCall = streamClient.call("default", String(callId));
         await streamCall.join({ create: true });
 
         setClient(streamClient);
         setCall(streamCall);
         setIsInitializing(false);
-        
+
         toast.success("Connected to Stream.io video service!");
         
       } catch (error) {
         console.error("Failed to initialize Stream.io:", error);
-        toast.error("Failed to connect to video service");
+        const message = error && typeof error.message === "string"
+          ? error.message
+          : "Failed to connect to video service";
+        setErrorMessage(message);
+        toast.error(message);
         setIsInitializing(false);
       }
     };
@@ -290,7 +304,10 @@ export default function StreamVideoFinal({ callId, userId, userName }) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-3xl font-bold text-white mb-4">Connection Failed</h1>
-        <p className="text-muted-foreground mb-6">Unable to connect to Stream.io video service.</p>
+        <p className="text-muted-foreground mb-2">Unable to connect to Stream.io video service.</p>
+        {errorMessage && (
+          <p className="text-xs text-red-300 mb-4 break-words max-w-xl mx-auto">{errorMessage}</p>
+        )}
         <div className="space-y-4">
           <Button onClick={() => window.location.reload()} className="bg-emerald-600 hover:bg-emerald-700">
             Try Again

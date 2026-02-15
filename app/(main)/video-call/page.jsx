@@ -1,10 +1,9 @@
-import ZoomVideoCall from "./zoom-video-call";
+import StreamVideoFinal from "./stream-video-final";
 import { checkUser } from "@/lib/checkUser";
 
 export default async function VideoCallPage({ searchParams }) {
   const params = await searchParams;
   const sessionId = params?.sessionId || params?.appointmentId;
-  const error = params?.error;
   
   const user = await checkUser();
   
@@ -33,12 +32,10 @@ export default async function VideoCallPage({ searchParams }) {
   }
 
   return (
-    <ZoomVideoCall
-      sessionId={sessionId}
+    <StreamVideoFinal
+      callId={String(sessionId)}
+      userId={String(user.id)}
       userName={user.name || user.email?.split("@")[0] || "User"}
-      userEmail={user.email}
-      userRole={user.role}
-      error={error}
     />
   );
 }
