@@ -59,13 +59,16 @@ export function AvailabilitySettings({ slots }) {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Create date objects
     const startDate = createLocalDateFromTime(data.startTime);
     const endDate = createLocalDateFromTime(data.endTime);
 
-    if (startDate >= endDate) {
-      toast.error("End time must be after start time");
+    if (startDate.getTime() === endDate.getTime()) {
+      toast.error("Start time and end time cannot be the same");
       return;
+    }
+
+    if (endDate <= startDate) {
+      endDate.setDate(endDate.getDate() + 1);
     }
 
     // Add to form data

@@ -30,13 +30,18 @@ export async function setAvailabilitySlots(formData) {
       throw new Error("Doctor not found");
     }
 
-    // Get form data
-    const startTime = formData.get("startTime");
-    const endTime = formData.get("endTime");
+    const startTimeRaw = formData.get("startTime");
+    const endTimeRaw = formData.get("endTime");
 
-    // Validate input
-    if (!startTime || !endTime) {
+    if (!startTimeRaw || !endTimeRaw) {
       throw new Error("Start time and end time are required");
+    }
+
+    const startTime = new Date(startTimeRaw);
+    const endTime = new Date(endTimeRaw);
+
+    if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+      throw new Error("Invalid start or end time");
     }
 
     if (startTime >= endTime) {
@@ -72,8 +77,8 @@ export async function setAvailabilitySlots(formData) {
     const newSlot = await db.availability.create({
       data: {
         doctorId: doctor.id,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
+        startTime,
+        endTime,
         status: "AVAILABLE",
       },
     });
