@@ -8,7 +8,6 @@ const ZOOM_SDK_KEY = process.env.ZOOM_SDK_KEY;
 const ZOOM_SDK_SECRET = process.env.ZOOM_SDK_SECRET;
 const ZOOM_MEETING_NUMBER = process.env.ZOOM_MEETING_NUMBER;
 const ZOOM_MEETING_PASSWORD = process.env.ZOOM_MEETING_PASSWORD;
-
 const ZOOM_ACCOUNT_ID = process.env.ZOOM_ACCOUNT_ID;
 const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID;
 const ZOOM_CLIENT_SECRET = process.env.ZOOM_CLIENT_SECRET;
@@ -34,152 +33,125 @@ function generateZoomSignature(meetingNumber, role) {
   });
 }
 
+let cachedToken = null;
+let cachedTokenExpiresAt = 0;
+
 async function getZoomAccessToken() {
-  if (!ZOOM_ACCOUNT_ID || !ZOOM_CLIENT_ID || !ZOOM_CLIENT_SECRET) {
-    throw new Error("Zoom account credentials are not configured");
+  const now = Date.now();
+  if (cachedToken && cachedTokenExpiresAt > now + 60_000) {
+    return cachedToken;
   }
 
-  const credentials = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+  if (!ZOOM_ACCOUNT_ID || !ZOOM_CLIENT_ID || !ZOOM_CLIENT_SECRET) {
+    throw new Error("Zoom account OAuth credentials are not configured");
+  }
 
-  const response = await fetch(
-    `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(
-      ZOOM_ACCOUNT_ID
-    )}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${credentials}`,
-      },
-    }
-  );
+  const basicAuth = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+
+  const url = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${ZOOM_ACCOUNT_ID}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to obtain Zoom access token");
   }
 
   const data = await response.json();
-  if (!data.access_token) {
-    throw new Error("Zoom access token not present in response");
-  }
-
-  return data.access_token;
-}
-
-async function getOrCreateZoomMeetingForAppointment(appointmentId) {
-  const appointment = await db.appointment.findUnique({
-    where: { id: appointmentId },
-    include: {
-      doctor: true,
-      patient: true,
-    },
-  });
-
-  if (!appointment) {
-    throw new Error("Appointment not found");
-  }
-
-  if (appointment.zoomMeetingId) {
-    return {
-      meetingNumber: Number(appointment.zoomMeetingId),
-      password: appointment.zoomMeetingPassword || "",
-    };
-  }
-
-  const accessToken = await getZoomAccessToken();
-
-  const start = new Date(appointment.startTime);
-  const end = new Date(appointment.endTime);
-  const durationMinutes = Math.max(15, Math.round((end.getTime() - start.getTime()) / (1000 * 60)) || 30);
-
-  const topicParts = [
-    "Consultation",
-    appointment.doctor?.name ? `with Dr ${appointment.doctor.name}` : null,
-    appointment.patient?.name ? `and ${appointment.patient.name}` : null,
-  ].filter(Boolean);
-
-  const response = await fetch("https://api.zoom.us/v2/users/me/meetings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      topic: topicParts.join(" "),
-      type: 2,
-      start_time: start.toISOString(),
-      duration: durationMinutes,
-      timezone: "UTC",
-      settings: {
-        waiting_room: true,
-        join_before_host: false,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to create Zoom meeting for appointment");
-  }
-
-  const meeting = await response.json();
-
-  const updated = await db.appointment.update({
-    where: { id: appointmentId },
-    data: {
-      zoomMeetingId: String(meeting.id),
-      zoomMeetingPassword: meeting.password || null,
-      zoomJoinUrl: meeting.join_url || null,
-    },
-  });
-
-  return {
-    meetingNumber: Number(updated.zoomMeetingId),
-    password: updated.zoomMeetingPassword || "",
-  };
+  cachedToken = data.access_token;
+  cachedTokenExpiresAt = now + data.expires_in * 1000;
+  return cachedToken;
 }
 
 export async function POST(request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const role = body.role === 1 ? 1 : 0;
-    const sessionId = body.sessionId;
-
     if (!ZOOM_SDK_KEY || !ZOOM_SDK_SECRET) {
       return NextResponse.json(
-        { error: "Zoom SDK keys are not configured" },
+        { error: "Zoom SDK credentials are not configured" },
         { status: 500 }
       );
     }
 
+    const body = await request.json().catch(() => ({}));
+    const role = body.role === 1 ? 1 : 0;
+    const sessionId = body.sessionId;
+
     let meetingNumber;
-    let password = "";
+    let meetingPassword;
 
-    if (ZOOM_ACCOUNT_ID && ZOOM_CLIENT_ID && ZOOM_CLIENT_SECRET) {
-      if (!sessionId) {
+    if (sessionId) {
+      const appointment = await db.appointment.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!appointment) {
         return NextResponse.json(
-          { error: "sessionId is required for per-appointment Zoom meetings" },
-          { status: 400 }
+          { error: "Appointment not found for Zoom meeting" },
+          { status: 404 }
         );
       }
 
-      try {
-        const result = await getOrCreateZoomMeetingForAppointment(sessionId);
-        meetingNumber = result.meetingNumber;
-        password = result.password || "";
-      } catch (e) {
-        console.error("Zoom per-appointment meeting failed, will try static meeting fallback:", e);
-      }
-    }
+      if (!appointment.zoomMeetingId) {
+        const accessToken = await getZoomAccessToken();
 
-    if (!meetingNumber) {
-      if (!ZOOM_MEETING_NUMBER) {
-        return NextResponse.json(
-          { error: "Zoom meeting number is not configured" },
-          { status: 500 }
+        const durationMinutes = Math.max(
+          15,
+          Math.round(
+            (appointment.endTime.getTime() - appointment.startTime.getTime()) /
+              60000
+          )
         );
-      }
 
+        const meetingResponse = await fetch("https://api.zoom.us/v2/users/me/meetings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic: "Appointment Consultation",
+            type: 2,
+            start_time: appointment.startTime.toISOString(),
+            duration: durationMinutes,
+          }),
+        });
+
+        if (!meetingResponse.ok) {
+          return NextResponse.json(
+            { error: "Failed to create Zoom meeting for appointment" },
+            { status: 500 }
+          );
+        }
+
+        const meetingData = await meetingResponse.json();
+
+        const updated = await db.appointment.update({
+          where: { id: appointment.id },
+          data: {
+            zoomMeetingId: String(meetingData.id),
+            zoomMeetingPassword: meetingData.password || null,
+            zoomJoinUrl: meetingData.join_url || null,
+          },
+        });
+
+        meetingNumber = Number(updated.zoomMeetingId);
+        meetingPassword = updated.zoomMeetingPassword || "";
+      } else {
+        meetingNumber = Number(appointment.zoomMeetingId);
+        meetingPassword = appointment.zoomMeetingPassword || "";
+      }
+    } else if (ZOOM_MEETING_NUMBER) {
       meetingNumber = Number(ZOOM_MEETING_NUMBER);
-      password = ZOOM_MEETING_PASSWORD || "";
+      meetingPassword = ZOOM_MEETING_PASSWORD || "";
+    } else {
+      return NextResponse.json(
+        { error: "No Zoom meeting configuration available" },
+        { status: 500 }
+      );
     }
 
     const signature = generateZoomSignature(meetingNumber, role);
@@ -188,13 +160,13 @@ export async function POST(request) {
       signature,
       sdkKey: ZOOM_SDK_KEY,
       meetingNumber,
-      password,
+      password: meetingPassword,
       role,
     });
   } catch (error) {
     console.error("Zoom signature generation error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to generate Zoom meeting signature" },
+      { error: "Failed to generate Zoom meeting signature" },
       { status: 500 }
     );
   }

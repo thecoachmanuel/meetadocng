@@ -15,7 +15,6 @@ import {
   Edit,
   Loader2,
   CheckCircle,
-  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -431,6 +430,7 @@ export function AppointmentCard({
               </div>
             )}
 
+            {/* Join Video Call Button */}
             {appointment.status === "SCHEDULED" && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">
@@ -457,24 +457,6 @@ export function AppointmentCard({
                     </>
                   )}
                 </Button>
-                {appointment.zoomJoinUrl && userRole === "DOCTOR" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-emerald-900/30 text-emerald-300"
-                    onClick={() =>
-                      window.open(
-                        appointment.zoomJoinUrl,
-                        "_blank",
-                        "noopener,noreferrer"
-                      )
-                    }
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open Zoom room directly
-                  </Button>
-                )}
               </div>
             )}
 
