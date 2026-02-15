@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsHmrCache: false,
-  },
-  serverExternalPackages: ["@prisma/client", "prisma"],
-  images: {
+	images: {
     remotePatterns: [
       {
         protocol: "https",
