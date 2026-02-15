@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import ZoomMtgEmbedded from "@zoom/meetingsdk/embedded";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -19,6 +18,12 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
 
     const initAndJoin = async () => {
       try {
+        if (typeof window === "undefined") {
+          return;
+        }
+
+        const { default: ZoomMtgEmbedded } = await import("@zoom/meetingsdk/embedded");
+
         const rootElement = zoomRootRef.current;
         if (!rootElement) {
           return;
@@ -144,4 +149,3 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
     </div>
   );
 }
-
