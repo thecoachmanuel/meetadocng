@@ -165,8 +165,12 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Zoom signature generation error:", error);
+    const message = error && typeof error.message === "string"
+      ? error.message
+      : "Failed to generate Zoom meeting signature";
+
     return NextResponse.json(
-      { error: "Failed to generate Zoom meeting signature" },
+      { error: message },
       { status: 500 }
     );
   }
