@@ -322,14 +322,27 @@ export async function getAvailableTimeSlots(doctorId) {
     const now = new Date();
     const days = [now, addDays(now, 1), addDays(now, 2), addDays(now, 3)];
 
+    // Derive time-of-day and overnight behavior from stored availability
+    const availabilityStartTemplate = new Date(availability.startTime);
+    const availabilityEndTemplate = new Date(availability.endTime);
+    const startHour = availabilityStartTemplate.getHours();
+    const startMinute = availabilityStartTemplate.getMinutes();
+    const endHour = availabilityEndTemplate.getHours();
+    const endMinute = availabilityEndTemplate.getMinutes();
+    const isOvernight =
+      availabilityEndTemplate.getDate() !==
+        availabilityStartTemplate.getDate() ||
+      availabilityEndTemplate <= availabilityStartTemplate;
+
     // Fetch existing appointments for the doctor over the next 4 days
     const lastDay = endOfDay(days[3]);
+    const lastOverlapDay = endOfDay(addDays(days[3], 1));
     const existingAppointments = await db.appointment.findMany({
       where: {
         doctorId: doctor.id,
         status: "SCHEDULED",
         startTime: {
-          lte: lastDay,
+          lte: lastOverlapDay,
         },
       },
     });
@@ -356,21 +369,15 @@ export async function getAvailableTimeSlots(doctorId) {
       const dayString = format(day, "yyyy-MM-dd");
       availableSlotsByDay[dayString] = [];
 
-      // Create a copy of the availability start/end times for this day
-      const availabilityStart = new Date(availability.startTime);
-      const availabilityEnd = new Date(availability.endTime);
+      // Build availability window for this specific day, respecting overnight ranges
+      const availabilityStart = new Date(day);
+      availabilityStart.setHours(startHour, startMinute, 0, 0);
 
-      // Set the day to the current day we're processing
-      availabilityStart.setFullYear(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate()
-      );
-      availabilityEnd.setFullYear(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate()
-      );
+      const availabilityEndBase = new Date(day);
+      availabilityEndBase.setHours(endHour, endMinute, 0, 0);
+      const availabilityEnd = isOvernight
+        ? addDays(availabilityEndBase, 1)
+        : availabilityEndBase;
 
       let current = new Date(availabilityStart);
       const end = new Date(availabilityEnd);
