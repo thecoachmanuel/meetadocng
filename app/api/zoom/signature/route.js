@@ -58,7 +58,14 @@ async function getZoomAccessToken() {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to obtain Zoom access token");
+    let details = "";
+    try {
+      const errorBody = await response.text();
+      details = errorBody.slice(0, 300);
+    } catch {}
+    throw new Error(
+      `Failed to obtain Zoom access token: ${response.status} ${response.statusText} ${details}`.trim()
+    );
   }
 
   const data = await response.json();
