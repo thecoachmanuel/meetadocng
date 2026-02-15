@@ -150,6 +150,9 @@ export async function POST(request) {
       );
     }
 
+    let meetingNumber;
+    let password = "";
+
     if (ZOOM_ACCOUNT_ID && ZOOM_CLIENT_ID && ZOOM_CLIENT_SECRET) {
       if (!sessionId) {
         return NextResponse.json(
@@ -158,40 +161,40 @@ export async function POST(request) {
         );
       }
 
-      const { meetingNumber, password } = await getOrCreateZoomMeetingForAppointment(sessionId);
-
-      const signature = generateZoomSignature(meetingNumber, role);
-
-      return NextResponse.json({
-        signature,
-        sdkKey: ZOOM_SDK_KEY,
-        meetingNumber,
-        password,
-        role,
-      });
+      try {
+        const result = await getOrCreateZoomMeetingForAppointment(sessionId);
+        meetingNumber = result.meetingNumber;
+        password = result.password || "";
+      } catch (e) {
+        console.error("Zoom per-appointment meeting failed, will try static meeting fallback:", e);
+      }
     }
 
-    if (!ZOOM_MEETING_NUMBER) {
-      return NextResponse.json(
-        { error: "Zoom meeting number is not configured" },
-        { status: 500 }
-      );
+    if (!meetingNumber) {
+      if (!ZOOM_MEETING_NUMBER) {
+        return NextResponse.json(
+          { error: "Zoom meeting number is not configured" },
+          { status: 500 }
+        );
+      }
+
+      meetingNumber = Number(ZOOM_MEETING_NUMBER);
+      password = ZOOM_MEETING_PASSWORD || "";
     }
 
-    const meetingNumber = Number(ZOOM_MEETING_NUMBER);
     const signature = generateZoomSignature(meetingNumber, role);
 
     return NextResponse.json({
       signature,
       sdkKey: ZOOM_SDK_KEY,
       meetingNumber,
-      password: ZOOM_MEETING_PASSWORD || "",
+      password,
       role,
     });
   } catch (error) {
     console.error("Zoom signature generation error:", error);
     return NextResponse.json(
-      { error: "Failed to generate Zoom meeting signature" },
+      { error: error?.message || "Failed to generate Zoom meeting signature" },
       { status: 500 }
     );
   }

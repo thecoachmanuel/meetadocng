@@ -74,7 +74,8 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
         if (!cancelled) {
           setHasError(true);
           setErrorMessage(
-            "Unable to start the Zoom meeting. Please check your configuration and try again."
+            error?.message ||
+              "Unable to start the Zoom meeting. Please check your configuration and try again."
           );
           setIsJoining(false);
           toast.error("Failed to start Zoom meeting");
