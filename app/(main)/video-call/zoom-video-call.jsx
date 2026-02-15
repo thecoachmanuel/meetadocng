@@ -110,57 +110,40 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
     router.push("/appointments");
   };
 
-  if (hasError) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center max-w-xl">
-        <h1 className="text-3xl font-bold text-white mb-4">Unable To Start Meeting</h1>
-        <p className="text-muted-foreground mb-6">
-          {errorMessage}
-        </p>
-        {debugInfo.length > 0 && (
-          <div className="bg-slate-950 border border-slate-800 rounded-md text-left p-3 mb-6 max-h-48 overflow-auto text-xs font-mono text-slate-200">
-            {debugInfo.map((line, index) => (
-              <div key={index}>{line}</div>
-            ))}
-          </div>
-        )}
-        <div className="space-y-4">
-          <Button onClick={() => window.location.reload()} className="w-full bg-emerald-600 hover:bg-emerald-700">
-            Try Again
-          </Button>
-          <Button onClick={handleEndCall} variant="outline" className="w-full">
-            Back to Appointments
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isJoining) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">Starting Zoom Consultation</h1>
-        <p className="text-muted-foreground mb-6">Preparing your secure Zoom meeting room...</p>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-0 md:px-4 py-4 h-screen flex flex-col">
       <div className="flex items-center justify-between mb-4 px-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">Zoom Consultation</h1>
           <p className="text-sm text-muted-foreground">
-            Connected as {userName}
+            {hasError ? "Unable to start meeting" : `Connected as ${userName}`}
           </p>
         </div>
         <Button onClick={handleEndCall} className="bg-red-600 hover:bg-red-700" size="sm">
           End Call
         </Button>
       </div>
-      <div className="flex-1 rounded-none md:rounded-lg overflow-hidden border border-emerald-900/20 bg-black">
-        <div ref={zoomRootRef} className="w-full h-full" />
+      <div className="flex-1 rounded-none md:rounded-lg overflow-hidden border border-emerald-900/20 bg-black flex flex-col">
+        {hasError && (
+          <div className="w-full p-4 text-center text-sm text-red-300 bg-red-950/40 border-b border-red-800/60">
+            <p className="mb-2">{errorMessage}</p>
+            {debugInfo.length > 0 && (
+              <div className="bg-slate-950 border border-slate-800 rounded-md text-left p-3 max-h-40 overflow-auto text-xs font-mono text-slate-200">
+                {debugInfo.map((line, index) => (
+                  <div key={index}>{line}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {isJoining && !hasError && (
+          <div className="w-full p-4 text-center text-sm text-muted-foreground border-b border-emerald-900/40 bg-emerald-950/30">
+            <h2 className="text-xl font-semibold text-white mb-2">Starting Zoom Consultation</h2>
+            <p className="mb-3">Preparing your secure Zoom meeting room...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400 mx-auto" />
+          </div>
+        )}
+        <div ref={zoomRootRef} className="w-full flex-1" />
       </div>
     </div>
   );
