@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId }) {
   const router = useRouter();
-  const zoomRootRef = useRef(null);
-  const clientRef = useRef(null);
   const [isJoining, setIsJoining] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -16,28 +14,11 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
   useEffect(() => {
     let cancelled = false;
 
-    const initAndJoin = async () => {
+    const redirectToZoom = async () => {
       try {
         if (typeof window === "undefined") {
           return;
         }
-
-        const { default: ZoomMtgEmbedded } = await import("@zoom/meetingsdk/embedded");
-
-        const rootElement = zoomRootRef.current;
-        if (!rootElement) {
-          return;
-        }
-
-        const client = ZoomMtgEmbedded.createClient();
-        clientRef.current = client;
-
-        await client.init({
-          zoomAppRoot: rootElement,
-          language: "en-US",
-          patchJsMedia: true,
-          leaveOnPageUnload: true,
-        });
 
         const response = await fetch("/api/zoom/signature", {
           method: "POST",
@@ -57,20 +38,30 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
 
         const data = await response.json();
 
-        await client.join({
-          sdkKey: data.sdkKey,
-          signature: data.signature,
-          meetingNumber: data.meetingNumber,
-          password: data.password,
-          userName,
-          userEmail,
-        });
+        if (cancelled) return;
 
-        if (!cancelled) {
-          setIsJoining(false);
+        const meetingNumber = String(data.meetingNumber || "");
+        if (!meetingNumber) {
+          throw new Error("Missing Zoom meeting number");
         }
+
+        const pwd = data.password || "";
+        const baseUrl = "https://zoom.us/wc";
+        let joinUrl = `${baseUrl}/${encodeURIComponent(meetingNumber)}/join`;
+
+        const params = new URLSearchParams();
+        if (pwd) params.set("pwd", pwd);
+        if (userName) params.set("uname", userName);
+        if (userEmail) params.set("email", userEmail);
+
+        const query = params.toString();
+        if (query) {
+          joinUrl += `?${query}`;
+        }
+
+        window.location.href = joinUrl;
       } catch (error) {
-        console.error("Zoom meeting error", error);
+        console.error("Zoom redirect error", error);
         if (!cancelled) {
           setHasError(true);
           setErrorMessage(
@@ -83,22 +74,14 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
       }
     };
 
-    initAndJoin();
+    redirectToZoom();
 
     return () => {
       cancelled = true;
-      if (clientRef.current) {
-        clientRef.current
-          .leave()
-          .catch(() => undefined);
-      }
     };
   }, [userName, userEmail, userRole, sessionId]);
 
   const handleEndCall = () => {
-    if (clientRef.current) {
-      clientRef.current.leave().catch(() => undefined);
-    }
     router.push("/appointments");
   };
 
@@ -144,8 +127,13 @@ export default function ZoomVideoCall({ userName, userEmail, userRole, sessionId
           End Call
         </Button>
       </div>
-      <div className="flex-1 rounded-none md:rounded-lg overflow-hidden border border-emerald-900/20 bg-black">
-        <div ref={zoomRootRef} className="w-full h-full" />
+      <div className="flex-1 rounded-none md:rounded-lg overflow-hidden border border-emerald-900/20 bg-black flex items-center justify-center px-4 text-center">
+        <div>
+          <p className="text-white mb-2">Redirecting you to Zoom…</p>
+          <p className="text-sm text-muted-foreground">
+            If nothing happens, you can safely close this tab and return to your appointments.
+          </p>
+        </div>
       </div>
     </div>
   );
