@@ -9,6 +9,39 @@ export const metadata = {
   description: "Manage doctors, patients, and platform settings",
 };
 
+const adminTabs = [
+  {
+    value: "pending",
+    label: "Pending Verification",
+    icon: AlertCircle,
+  },
+  {
+    value: "doctors",
+    label: "Doctors",
+    icon: Users,
+  },
+  {
+    value: "payouts",
+    label: "Payouts",
+    icon: CreditCard,
+  },
+  {
+    value: "users",
+    label: "Users",
+    icon: Users,
+  },
+  {
+    value: "leaderboards",
+    label: "Leaderboards",
+    icon: Layout,
+  },
+  {
+    value: "settings",
+    label: "Site Settings",
+    icon: Layout,
+  },
+];
+
 export default async function AdminLayout({ children }) {
   // Verify the user has admin access
   const isAdmin = await verifyAdmin();
@@ -28,39 +61,20 @@ export default async function AdminLayout({ children }) {
         className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
         <TabsList className="md:col-span-1 bg-muted/30 border h-auto md:h-40 flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-md md:space-y-2 sm:space-x-2 md:space-x-0 overflow-x-auto sm:overflow-x-auto md:overflow-visible whitespace-nowrap scroll-smooth">
-          <TabsTrigger
-            value="pending"
-            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
-          >
-            <AlertCircle className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Pending Verification</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="doctors"
-            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
-          >
-            <Users className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Doctors</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="payouts"
-            className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
-          >
-            <CreditCard className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Payouts</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
-            <Users className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Users</span>
-          </TabsTrigger>
-          <TabsTrigger value="leaderboards" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
-            <Layout className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Leaderboards</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2">
-            <Layout className="h-4 w-4 mr-2 hidden md:inline" />
-            <span>Site Settings</span>
-          </TabsTrigger>
+          {adminTabs.map((tab) => {
+            const Icon = tab.icon;
+
+            return (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="shrink-0 md:flex md:items-center md:justify-start md:px-4 md:py-3 px-3 py-2"
+              >
+                <Icon className="h-4 w-4 mr-2 hidden md:inline" />
+                <span>{tab.label}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
         <div className="md:col-span-3">{children}</div>
       </Tabs>
