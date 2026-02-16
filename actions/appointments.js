@@ -70,6 +70,12 @@ export async function bookAppointment(formData) {
       throw new Error("Doctor, start time, and end time are required");
     }
 
+    const now = new Date();
+
+    if (startTime <= now || endTime <= now) {
+      throw new Error("You can only book appointments for future times");
+    }
+
     // Check if the doctor exists and is verified
     const doctor = await db.user.findUnique({
       where: {

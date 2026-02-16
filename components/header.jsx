@@ -16,15 +16,24 @@ import Image from "next/image";
 import AvatarToggleLink from "@/components/avatar-toggle-link";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getSettings } from "@/lib/settings";
+import { getDoctorEarnings } from "@/actions/payout";
 
 export default async function Header() {
   const [user, settings] = await Promise.all([checkUser(), getSettings()]);
+
+  let doctorAvailableCredits = null;
+  if (user?.role === "DOCTOR") {
+    try {
+      const earningsData = await getDoctorEarnings();
+      doctorAvailableCredits = earningsData?.earnings?.availableCredits ?? null;
+    } catch {}
+  }
   if (user?.role === "PATIENT") {
     await checkAndAllocateCredits(user);
   }
 
   return (
-    <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-10 supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-10 supports-backdrop-filter:bg-background/60">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 cursor-pointer">
           <Image
@@ -116,7 +125,9 @@ export default async function Header() {
                 <span className="text-emerald-400">
                   {user && user.role !== "ADMIN" ? (
                     <>
-                      {user.credits}{" "}
+                      {user.role === "DOCTOR" && doctorAvailableCredits !== null
+                        ? doctorAvailableCredits
+                        : user.credits}{" "}
                       <span className="hidden md:inline">
                         {user?.role === "PATIENT"
                           ? "Credits"

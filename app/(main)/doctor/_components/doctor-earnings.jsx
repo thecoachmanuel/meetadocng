@@ -203,11 +203,11 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
               </div>
             )}
 
-            {!pendingPayout && availableCredits > 0 && (
+            {!pendingPayoutRequest && availableCredits > 0 && (
               <Button onClick={() => setShowPayoutDialog(true)} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700">Request Payout for All Credits</Button>
             )}
 
-            {availableCredits === 0 && !pendingPayout && (
+            {availableCredits === 0 && !pendingPayoutRequest && (
               <div className="text-center py-4">
                 <p className="text-muted-foreground">No credits available for payout. Complete more appointments to earn credits.</p>
               </div>

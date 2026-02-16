@@ -45,9 +45,15 @@ export async function getPatientAppointments() {
       throw new Error("Patient not found");
     }
 
+    const now = new Date();
+
     const appointments = await db.appointment.findMany({
       where: {
         patientId: user.id,
+        status: "SCHEDULED",
+        endTime: {
+          gte: now,
+        },
       },
       include: {
         doctor: {
@@ -61,7 +67,7 @@ export async function getPatientAppointments() {
         },
       },
       orderBy: {
-        startTime: "desc",
+        startTime: "asc",
       },
     });
 
