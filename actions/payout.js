@@ -86,6 +86,7 @@ export async function requestPayout(formData) {
         credits: creditCount,
         platformFee,
         netAmount,
+        paypalEmail: authUser.email || doctor.email || "",
         bankName,
         accountName,
         accountNumber,
