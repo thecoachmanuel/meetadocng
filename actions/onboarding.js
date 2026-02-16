@@ -117,11 +117,29 @@ export async function getCurrentUser() {
   }
 
   try {
-    const dbUser = await db.user.findUnique({
+    let dbUser = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
       },
     });
+
+    if (!dbUser) {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({
+          where: { email },
+        });
+        if (byEmail) {
+          if (!byEmail.supabaseUserId) {
+            await db.user.update({
+              where: { email },
+              data: { supabaseUserId: authUser.id },
+            });
+          }
+          dbUser = byEmail;
+        }
+      }
+    }
 
     return dbUser;
   } catch (error) {
