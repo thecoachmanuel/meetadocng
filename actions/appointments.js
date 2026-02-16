@@ -36,15 +36,24 @@ export async function bookAppointment(formData) {
   const authUser = data.user;
 
   try {
-    // Get the patient user
-    const patient = await db.user.findUnique({
+    // Get the patient user, with fallback to email for legacy records
+    let patient = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "PATIENT",
       },
     });
 
-    if (!patient) {
+    if (!patient || patient.role !== "PATIENT") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "PATIENT") {
+          patient = byEmail;
+        }
+      }
+    }
+
+    if (!patient || patient.role !== "PATIENT") {
       throw new Error("Patient not found");
     }
 

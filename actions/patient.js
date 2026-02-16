@@ -15,17 +15,33 @@ export async function getPatientAppointments() {
   const authUser = data.user;
 
   try {
-    const user = await db.user.findUnique({
+    let user = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "PATIENT",
       },
       select: {
         id: true,
+        role: true,
       },
     });
 
-    if (!user) {
+    if (!user || user.role !== "PATIENT") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            role: true,
+          },
+        });
+        if (byEmail?.role === "PATIENT") {
+          user = byEmail;
+        }
+      }
+    }
+
+    if (!user || user.role !== "PATIENT") {
       throw new Error("Patient not found");
     }
 
