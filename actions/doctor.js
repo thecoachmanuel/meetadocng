@@ -19,15 +19,23 @@ export async function setAvailabilitySlots(formData) {
   const authUser = data.user;
 
   try {
-    // Get the doctor
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -81,14 +89,23 @@ export async function deleteAvailabilitySlot(formData) {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -126,14 +143,23 @@ export async function getDoctorAvailability() {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -167,14 +193,23 @@ export async function getDoctorAppointments() {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -182,7 +217,7 @@ export async function getDoctorAppointments() {
       where: {
         doctorId: doctor.id,
         status: {
-          in: ["SCHEDULED"],
+          in: ["SCHEDULED", "COMPLETED"],
         },
       },
       include: {
@@ -358,14 +393,23 @@ export async function addAppointmentNotes(formData) {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -420,14 +464,23 @@ export async function markAppointmentCompleted(formData) {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 

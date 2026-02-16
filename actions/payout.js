@@ -19,14 +19,23 @@ export async function requestPayout(formData) {
   const authUser = data.user;
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -105,14 +114,23 @@ export async function getDoctorPayouts() {
   }
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 
@@ -144,14 +162,23 @@ export async function getDoctorEarnings() {
   }
 
   try {
-    const doctor = await db.user.findUnique({
+    let doctor = await db.user.findUnique({
       where: {
         supabaseUserId: authUser.id,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
+    if (!doctor || doctor.role !== "DOCTOR") {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        const byEmail = await db.user.findUnique({ where: { email } });
+        if (byEmail?.role === "DOCTOR") {
+          doctor = byEmail;
+        }
+      }
+    }
+
+    if (!doctor || doctor.role !== "DOCTOR") {
       throw new Error("Doctor not found");
     }
 

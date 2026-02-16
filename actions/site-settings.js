@@ -24,10 +24,39 @@ export async function updateSiteSettings(formData) {
   if (error || !data?.user) throw new Error("Unauthorized");
   const user = data.user;
 
-  const settings = Object.fromEntries(formData.entries());
+  const rawSettings = Object.fromEntries(formData.entries());
+  const settings = { ...rawSettings };
+
+  const intFields = [
+    "appointmentCreditCost",
+    "doctorEarningPerCredit",
+    "creditToNairaRate",
+    "adminEarningPercentage",
+    "freeCredits",
+    "standardCredits",
+    "premiumCredits",
+  ];
+
+  intFields.forEach((key) => {
+    if (settings[key] !== undefined) {
+      const n = Number(settings[key]);
+      if (Number.isFinite(n)) {
+        settings[key] = n;
+      } else {
+        delete settings[key];
+      }
+    }
+  });
   await ensure();
   try {
-    await db.siteSettings.update({ where: { id: "singleton" }, data: settings });
+    await db.siteSettings.upsert({
+      where: { id: "singleton" },
+      create: {
+        id: "singleton",
+        ...settings,
+      },
+      update: settings,
+    });
   } catch (e) {
     throw new Error("Site settings table not found. Please run database migration.");
   }
