@@ -17,7 +17,7 @@ import {
 } from "@stream-io/video-react-sdk";
 
 // Custom hook for Stream.io video calling
-function VideoCallUI({ userId, userName, callId }) {
+function VideoCallUI({ userId, userName, callId, onLeave }) {
   const call = useCall();
   const { useCallCallingState, useLocalParticipant, useRemoteParticipants } = useCallStateHooks();
   
@@ -28,6 +28,7 @@ function VideoCallUI({ userId, userName, callId }) {
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [hasLeft, setHasLeft] = useState(false);
 
   useEffect(() => {
     if (callingState === CallingState.JOINED) {
@@ -35,10 +36,14 @@ function VideoCallUI({ userId, userName, callId }) {
       toast.success("Connected to video consultation!");
     } else if (callingState === CallingState.JOINING) {
       setIsConnecting(true);
-    } else if (callingState === CallingState.LEFT) {
+    } else if (callingState === CallingState.LEFT && !hasLeft) {
+      setHasLeft(true);
       toast.info("Left the video consultation");
+      if (onLeave) {
+        onLeave();
+      }
     }
-  }, [callingState]);
+  }, [callingState, hasLeft, onLeave]);
 
   const toggleVideo = async () => {
     if (call) {
@@ -67,11 +72,15 @@ function VideoCallUI({ userId, userName, callId }) {
   };
 
   const leaveCall = async () => {
-    if (call) {
-      try {
+    try {
+      if (call) {
         await call.leave();
-      } catch (error) {
-        console.error("Failed to leave call:", error);
+      }
+    } catch (error) {
+      console.error("Failed to leave call:", error);
+    } finally {
+      if (onLeave) {
+        onLeave();
       }
     }
   };
@@ -244,9 +253,10 @@ export default function StreamVideoFinal({ callId, userId, userName, apiKey, tok
       }
     };
 
-		initializeStream();
+    initializeStream();
+	}, [apiKey, token, callId, userId, userName]);
 
-    // Cleanup
+  useEffect(() => {
     return () => {
       if (call) {
         call.leave().catch(console.error);
@@ -255,15 +265,16 @@ export default function StreamVideoFinal({ callId, userId, userName, apiKey, tok
         client.disconnectUser();
       }
     };
-	}, [apiKey, token, callId, userId, userName]);
+  }, [call, client]);
 
   const handleLeaveCall = () => {
     if (call) {
-      call.leave().then(() => {
-        router.push("/appointments");
-      }).catch(() => {
-        router.push("/appointments");
-      });
+      call
+        .leave()
+        .catch(() => {})
+        .finally(() => {
+          router.push("/appointments");
+        });
     } else {
       router.push("/appointments");
     }
@@ -302,7 +313,8 @@ export default function StreamVideoFinal({ callId, userId, userName, apiKey, tok
         <VideoCallUI 
           callId={callId} 
           userId={userId} 
-          userName={userName} 
+          userName={userName}
+          onLeave={handleLeaveCall}
         />
       </StreamCall>
     </StreamVideo>

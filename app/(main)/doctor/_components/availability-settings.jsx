@@ -13,18 +13,34 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Clock, Plus, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
-import { setAvailabilitySlots } from "@/actions/doctor";
+import { setAvailabilitySlots, deleteAvailabilitySlot } from "@/actions/doctor";
 import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 
-export function AvailabilitySettings({ slots }) {
+export function AvailabilitySettings({ slots, appointments = [] }) {
   const [showForm, setShowForm] = useState(false);
   const router = useRouter();
 
   // Custom hook for server action
   const { loading, fn: submitSlots, data } = useFetch(setAvailabilitySlots);
+  const {
+    loading: deleting,
+    fn: submitDelete,
+    data: deleteResult,
+  } = useFetch(deleteAvailabilitySlot);
 
   // React Hook Form
   const {
@@ -49,6 +65,38 @@ export function AvailabilitySettings({ slots }) {
       minutes
     );
     return date;
+  }
+
+  function buildIntervals(start, end) {
+    const s = new Date(start);
+    const e = new Date(end);
+    const sMinutes = s.getHours() * 60 + s.getMinutes();
+    const eMinutes = e.getHours() * 60 + e.getMinutes();
+    if (eMinutes > sMinutes) {
+      return [[sMinutes, eMinutes]];
+    }
+    return [
+      [sMinutes, 24 * 60],
+      [0, eMinutes],
+    ];
+  }
+
+  function hasUpcomingAppointmentsForSlot(slot) {
+    const slotIntervals = buildIntervals(slot.startTime, slot.endTime);
+    const now = new Date();
+    return appointments.some((appointment) => {
+      const appointmentEnd = new Date(appointment.endTime);
+      if (appointmentEnd < now) {
+        return false;
+      }
+      const appointmentIntervals = buildIntervals(
+        appointment.startTime,
+        appointment.endTime
+      );
+      return slotIntervals.some(([s1, e1]) =>
+        appointmentIntervals.some(([s2, e2]) => s1 < e2 && s2 < e1)
+      );
+    });
   }
 
   // Handle slot submission
@@ -78,6 +126,15 @@ export function AvailabilitySettings({ slots }) {
     await submitSlots(formData);
   };
 
+  const handleDeleteSlot = async (slotId) => {
+    if (deleting) return;
+
+    const formData = new FormData();
+    formData.append("slotId", slotId);
+
+    await submitDelete(formData);
+  };
+
   useEffect(() => {
     if (data && data?.success) {
       setShowForm(false);
@@ -85,6 +142,13 @@ export function AvailabilitySettings({ slots }) {
       router.refresh();
     }
   }, [data, router]);
+
+  useEffect(() => {
+    if (deleteResult && deleteResult?.success) {
+      toast.success("Availability slot removed");
+      router.refresh();
+    }
+  }, [deleteResult, router]);
 
   // Format time string for display
   const formatTimeString = (dateString) => {
@@ -122,25 +186,79 @@ export function AvailabilitySettings({ slots }) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {slots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      className="flex items-center p-3 rounded-md bg-muted/20 border border-emerald-900/20"
-                    >
-                      <div className="bg-emerald-900/20 p-2 rounded-full mr-3">
-                        <Clock className="h-4 w-4 text-emerald-400" />
+                  {slots.map((slot) => {
+                    const hasAppointments =
+                      hasUpcomingAppointmentsForSlot(slot);
+                    return (
+                      <div
+                        key={slot.id}
+                        className="flex items-center justify-between p-3 rounded-md bg-muted/20 border border-emerald-900/20"
+                      >
+                        <div className="flex items-center">
+                          <div className="bg-emerald-900/20 p-2 rounded-full mr-3">
+                            <Clock className="h-4 w-4 text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">
+                              {formatTimeString(slot.startTime)} -{" "}
+                              {formatTimeString(slot.endTime)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {hasAppointments
+                                ? "Has upcoming appointments"
+                                : "Available"}
+                            </p>
+                          </div>
+                        </div>
+                        {hasAppointments ? (
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-emerald-900/40 text-muted-foreground"
+                          >
+                            Cannot remove
+                          </Badge>
+                        ) : (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={deleting}
+                                className="border-emerald-900/40 text-xs"
+                              >
+                                Remove
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Remove availability window?
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Are you sure you want to remove this
+                                  availability window? Patients will no longer
+                                  see new slots in this range.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <DialogClose asChild>
+                                  <Button variant="outline">Cancel</Button>
+                                </DialogClose>
+                                <Button
+                                  variant="destructive"
+                                  disabled={deleting}
+                                  onClick={() => handleDeleteSlot(slot.id)}
+                                >
+                                  Confirm
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-white font-medium">
-                          {formatTimeString(slot.startTime)} -{" "}
-                          {formatTimeString(slot.endTime)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {slot.appointment ? "Booked" : "Available"}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

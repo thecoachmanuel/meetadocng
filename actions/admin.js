@@ -153,7 +153,51 @@ export async function getAnalytics() {
       _count: { _all: true },
     });
 
+    const adminResolutionsRaw = await db.appointment.findMany({
+      where: {
+        adminResolutionNote: {
+          not: null,
+        },
+      },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            specialty: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+      take: 20,
+    });
+
     const settings = await (await import("@/lib/settings")).getSettings();
+
+    const payoutsThisMonth = await db.payout.findMany({
+      where: {
+        status: "PROCESSED",
+        createdAt: {
+          gte: startMonth,
+        },
+      },
+    });
+
+    const payoutsAllTime = await db.payout.findMany({
+      where: {
+        status: "PROCESSED",
+      },
+    });
 
     const usersMonthlyCalls = (
       await Promise.all(
@@ -181,8 +225,10 @@ export async function getAnalytics() {
           const d = await db.user.findUnique({ where: { id: row.doctorId } });
           if (!d) return null;
           const points = row._count._all * settings.appointmentCreditCost;
-          const naira =
-            points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+          const grossPerCredit = settings.creditToNairaRate;
+          const adminPercentage = settings.adminEarningPercentage ?? 0;
+          const netPerCredit = grossPerCredit * (1 - adminPercentage / 100);
+          const naira = points * netPerCredit;
           return { id: d.id, name: d.name, email: d.email, points, naira };
         })
       )
@@ -194,18 +240,67 @@ export async function getAnalytics() {
           const d = await db.user.findUnique({ where: { id: row.doctorId } });
           if (!d) return null;
           const points = row._count._all * settings.appointmentCreditCost;
-          const naira =
-            points * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+          const grossPerCredit = settings.creditToNairaRate;
+          const adminPercentage = settings.adminEarningPercentage ?? 0;
+          const netPerCredit = grossPerCredit * (1 - adminPercentage / 100);
+          const naira = points * netPerCredit;
           return { id: d.id, name: d.name, email: d.email, points, naira };
         })
       )
     ).filter(Boolean);
+
+    const adminResolutions = adminResolutionsRaw.map((appt) => ({
+      id: appt.id,
+      doctor: appt.doctor,
+      patient: appt.patient,
+      status: appt.status,
+      decision: appt.status === "CANCELLED" ? "REFUNDED" : "RELEASED",
+      note: appt.adminResolutionNote,
+      updatedAt: appt.updatedAt,
+    }));
+
+    const totalPlatformFeesThisMonth = payoutsThisMonth.reduce(
+      (sum, payout) => sum + (payout.platformFee || 0),
+      0
+    );
+
+    const totalPlatformFeesAllTime = payoutsAllTime.reduce(
+      (sum, payout) => sum + (payout.platformFee || 0),
+      0
+    );
+
+    const platformFeesTimelineMap = new Map();
+
+    payoutsAllTime.forEach((payout) => {
+      const date = payout.createdAt;
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const existing = platformFeesTimelineMap.get(key) || {
+        month: key,
+        platformFee: 0,
+        grossAmount: 0,
+        netAmount: 0,
+      };
+      existing.platformFee += payout.platformFee || 0;
+      existing.grossAmount += payout.amount || 0;
+      existing.netAmount += payout.netAmount || 0;
+      platformFeesTimelineMap.set(key, existing);
+    });
+
+    const platformFeesTimeline = Array.from(platformFeesTimelineMap.values()).sort(
+      (a, b) => a.month.localeCompare(b.month)
+    ).slice(-6);
 
     return {
       usersMonthlyCalls,
       usersAllTimeCalls,
       doctorsMonthlyEarnings,
       doctorsAllTimeEarnings,
+      adminResolutions,
+      platformFees: {
+        totalThisMonth: totalPlatformFeesThisMonth,
+        totalAllTime: totalPlatformFeesAllTime,
+        timeline: platformFeesTimeline,
+      },
     };
   } catch (error) {
     console.error("Failed to get analytics:", error);
@@ -214,8 +309,63 @@ export async function getAnalytics() {
       usersAllTimeCalls: [],
       doctorsMonthlyEarnings: [],
       doctorsAllTimeEarnings: [],
+      adminResolutions: [],
+      platformFees: {
+        totalThisMonth: 0,
+        totalAllTime: 0,
+        timeline: [],
+      },
     };
   }
+}
+
+export async function adminAdjustUserCredits(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const rawEmail = formData.get("email");
+  const rawCredits = formData.get("credits");
+  const mode = formData.get("mode") || "gift";
+
+  const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+  const credits = Number(rawCredits || 0);
+
+  if (!email) {
+    throw new Error("User email is required");
+  }
+
+  if (!Number.isFinite(credits) || credits <= 0) {
+    throw new Error("Credits must be a positive number");
+  }
+
+  const user = await db.user.findUnique({ where: { email } });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        credits: {
+          increment: credits,
+        },
+      },
+    });
+
+    await tx.creditTransaction.create({
+      data: {
+        userId: user.id,
+        amount: credits,
+        type: mode === "sale" ? "CREDIT_PURCHASE" : "ADMIN_ADJUSTMENT",
+      },
+    });
+  });
+
+  revalidatePath("/admin");
+
+  return { success: true };
 }
 
 /**
@@ -409,5 +559,244 @@ export async function approvePayout(formData) {
   } catch (error) {
     console.error("Failed to approve payout:", error);
     throw new Error(`Failed to approve payout: ${error.message}`);
+  }
+}
+
+export async function getDoctorEscrowDecisions(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const doctorId = formData.get("doctorId");
+
+  if (!doctorId) {
+    throw new Error("Doctor ID is required");
+  }
+
+  try {
+    const appointments = await db.appointment.findMany({
+      where: {
+        doctorId,
+        adminResolutionNote: {
+          not: null,
+        },
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+      take: 20,
+    });
+
+    const decisions = appointments.map((appt) => ({
+      id: appt.id,
+      status: appt.status,
+      decision: appt.status === "CANCELLED" ? "REFUNDED" : "RELEASED",
+      note: appt.adminResolutionNote,
+      updatedAt: appt.updatedAt,
+      lockedCredits: appt.lockedCredits,
+      patient: appt.patient,
+    }));
+
+    return { decisions };
+  } catch (error) {
+    console.error("Failed to fetch doctor escrow decisions:", error);
+    throw new Error("Failed to fetch doctor escrow decisions");
+  }
+}
+
+export async function getEscrowAppointments() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  try {
+    const appointments = await db.appointment.findMany({
+      where: {
+        lockedCredits: {
+          gt: 0,
+        },
+        creditsReleased: false,
+      },
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            specialty: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+
+    return { appointments };
+  } catch (error) {
+    console.error("Failed to fetch escrow appointments:", error);
+    throw new Error("Failed to fetch escrow appointments");
+  }
+}
+
+export async function releaseAppointmentCredits(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const appointmentId = formData.get("appointmentId");
+  const note = formData.get("note");
+
+  if (!appointmentId) {
+    throw new Error("Appointment ID is required");
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findUnique({
+        where: {
+          id: appointmentId,
+        },
+      });
+
+      if (!appointment) {
+        throw new Error("Appointment not found");
+      }
+
+      if (appointment.creditsReleased) {
+        return;
+      }
+
+      if (!appointment.lockedCredits || appointment.lockedCredits <= 0) {
+        throw new Error("No locked credits to release for this appointment");
+      }
+
+      if (appointment.status === "CANCELLED") {
+        throw new Error("Cannot release credits for a cancelled appointment");
+      }
+
+      const payoutCredits = appointment.lockedCredits;
+
+      await tx.creditTransaction.create({
+        data: {
+          userId: appointment.doctorId,
+          amount: payoutCredits,
+          type: "ADMIN_ADJUSTMENT",
+        },
+      });
+
+      await tx.user.update({
+        where: {
+          id: appointment.doctorId,
+        },
+        data: {
+          credits: {
+            increment: payoutCredits,
+          },
+        },
+      });
+
+      await tx.appointment.update({
+        where: {
+          id: appointmentId,
+        },
+        data: {
+          status: appointment.status === "SCHEDULED" ? "COMPLETED" : appointment.status,
+          creditsReleased: true,
+          adminResolutionNote: note || appointment.adminResolutionNote,
+        },
+      });
+    });
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to release appointment credits:", error);
+    throw new Error(`Failed to release appointment credits: ${error.message}`);
+  }
+}
+
+export async function refundAppointmentCredits(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const appointmentId = formData.get("appointmentId");
+  const note = formData.get("note");
+
+  if (!appointmentId) {
+    throw new Error("Appointment ID is required");
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findUnique({
+        where: {
+          id: appointmentId,
+        },
+      });
+
+      if (!appointment) {
+        throw new Error("Appointment not found");
+      }
+
+      if (appointment.creditsReleased) {
+        throw new Error("Credits already released for this appointment");
+      }
+
+      if (!appointment.lockedCredits || appointment.lockedCredits <= 0) {
+        throw new Error("No locked credits to refund for this appointment");
+      }
+
+      const refundAmount = appointment.lockedCredits;
+
+      await tx.creditTransaction.create({
+        data: {
+          userId: appointment.patientId,
+          amount: refundAmount,
+          type: "ADMIN_ADJUSTMENT",
+        },
+      });
+
+      await tx.user.update({
+        where: {
+          id: appointment.patientId,
+        },
+        data: {
+          credits: {
+            increment: refundAmount,
+          },
+        },
+      });
+
+      await tx.appointment.update({
+        where: {
+          id: appointmentId,
+        },
+        data: {
+          status: "CANCELLED",
+          creditsReleased: true,
+          adminResolutionNote: note || appointment.adminResolutionNote,
+        },
+      });
+    });
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to refund appointment credits:", error);
+    throw new Error(`Failed to refund appointment credits: ${error.message}`);
   }
 }

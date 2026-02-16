@@ -79,6 +79,9 @@ model Appointment {
   status            AppointmentStatus @default(SCHEDULED)
   notes             String?  @db.Text
   patientDescription String? @db.Text
+  lockedCredits     Int      @default(0)
+  creditsReleased   Boolean  @default(false)
+  adminResolutionNote String? @db.Text
     
   // Video session fields
   videoSessionId    String?  // Vonage Video API Session ID
@@ -146,6 +149,7 @@ model SiteSettings {
   appointmentCreditCost Int @default(2)
   doctorEarningPerCredit Int @default(8)
   creditToNairaRate Int @default(1000)
+  adminEarningPercentage Int @default(20)
   freeCredits Int @default(2)
   standardCredits Int @default(10)
   premiumCredits Int @default(24)

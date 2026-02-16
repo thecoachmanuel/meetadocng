@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Check, Ban, Loader2, User, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { updateDoctorActiveStatus } from "@/actions/admin";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { updateDoctorActiveStatus, getDoctorEscrowDecisions } from "@/actions/admin";
 import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 
@@ -20,12 +21,20 @@ export function VerifiedDoctors({ doctors }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [targetDoctor, setTargetDoctor] = useState(null);
   const [actionType, setActionType] = useState(null);
+  const [escrowDoctor, setEscrowDoctor] = useState(null);
+  const [showEscrowDialog, setShowEscrowDialog] = useState(false);
 
   const {
     loading,
     data,
     fn: submitStatusUpdate,
   } = useFetch(updateDoctorActiveStatus);
+
+  const {
+    loading: escrowLoading,
+    data: escrowData,
+    fn: fetchEscrowDecisions,
+  } = useFetch(getDoctorEscrowDecisions);
 
   const filteredDoctors = (doctors || []).filter((doctor) => {
     const query = (searchTerm || "").toLowerCase();
@@ -53,6 +62,15 @@ export function VerifiedDoctors({ doctors }) {
     setActionType(suspend ? "SUSPEND" : "REINSTATE");
 
     await submitStatusUpdate(formData);
+  };
+
+  const handleViewEscrow = async (doctor) => {
+    setEscrowDoctor(doctor);
+    setShowEscrowDialog(true);
+
+    const formData = new FormData();
+    formData.append("doctorId", doctor.id);
+    await fetchEscrowDecisions(formData);
   };
 
   useEffect(() => {
@@ -161,6 +179,14 @@ export function VerifiedDoctors({ doctors }) {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => handleViewEscrow(doctor)}
+                                className="border-emerald-900/30 hover:bg-muted/80"
+                              >
+                                View decisions
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleStatusChange(doctor, true)}
                                 disabled={loading}
                                 className="border-red-900/30 hover:bg-red-900/10 text-red-400"
@@ -184,6 +210,77 @@ export function VerifiedDoctors({ doctors }) {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={showEscrowDialog}
+        onOpenChange={(open) => {
+          setShowEscrowDialog(open);
+          if (!open) {
+            setEscrowDoctor(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              Escrow decisions
+              {escrowDoctor ? ` for Dr. ${escrowDoctor.name}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-3 max-h-[60vh] overflow-y-auto">
+            {escrowLoading && (
+              <div className="text-sm text-muted-foreground">
+                Loading decisions...
+              </div>
+            )}
+            {!escrowLoading && (!escrowData?.decisions || escrowData.decisions.length === 0) && (
+              <div className="text-sm text-muted-foreground">
+                No escrow decisions recorded for this doctor yet.
+              </div>
+            )}
+            {!escrowLoading &&
+              (escrowData?.decisions || []).map((d) => (
+                <div
+                  key={d.id}
+                  className="border border-emerald-900/20 rounded-md px-3 py-2 bg-muted/10 space-y-1"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      {new Date(d.updatedAt).toLocaleString()}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={
+                          d.decision === "REFUNDED"
+                            ? "bg-rose-900/20 border-rose-900/30 text-rose-400"
+                            : "bg-emerald-900/20 border-emerald-900/30 text-emerald-400"
+                        }
+                      >
+                        {d.decision}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="bg-muted/20 border-muted/40 text-muted-foreground"
+                      >
+                        {d.lockedCredits} credits
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Patient: {d.patient?.name || "Unknown"} ({
+                      d.patient?.email || "no email"
+                    })
+                  </div>
+                  <p className="text-sm text-white whitespace-pre-wrap">
+                    {d.note}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

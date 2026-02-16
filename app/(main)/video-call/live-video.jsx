@@ -13,11 +13,43 @@ export default function LiveVideo({ callId, userId, userName }) {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [hasLocalStream, setHasLocalStream] = useState(false);
   const [hasRemoteStream, setHasRemoteStream] = useState(false);
-  
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
+
+  const stopAllMedia = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        if (track.readyState !== "ended") {
+          track.stop();
+        }
+      });
+      localStreamRef.current = null;
+    }
+
+    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+      const remoteStream = remoteVideoRef.current.srcObject;
+      if (remoteStream && typeof remoteStream.getTracks === "function") {
+        remoteStream.getTracks().forEach((track) => {
+          if (track.readyState !== "ended") {
+            track.stop();
+          }
+        });
+      }
+      remoteVideoRef.current.srcObject = null;
+    }
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (!callId || !userId) {
@@ -105,23 +137,13 @@ export default function LiveVideo({ callId, userId, userName }) {
 
     initializeVideo();
 
-    // Cleanup function
     return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => {
-          track.stop();
-        });
-      }
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-      }
+      stopAllMedia();
     };
   }, [callId, userId]);
 
   const handleEndCall = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-    }
+    stopAllMedia();
     router.push("/appointments");
   };
 

@@ -74,11 +74,6 @@ export async function bookAppointment(formData) {
       throw new Error("Doctor not found or not verified");
     }
 
-    // Check if the patient has enough credits (2 credits per appointment)
-    if (patient.credits < 2) {
-      throw new Error("Insufficient credits to book an appointment");
-    }
-
     // Check if the requested time slot is available
     const overlappingAppointment = await db.appointment.findFirst({
       where: {
@@ -120,14 +115,11 @@ export async function bookAppointment(formData) {
       throw new Error("This time slot is already booked");
     }
 
-    // Deduct credits from patient and add to doctor
-    const { success, error } = await deductCreditsForAppointment(
-      patient.id,
-      doctor.id
-    );
+    const { success, error: creditError, cost } =
+      await deductCreditsForAppointment(patient.id, doctor.id);
 
     if (!success) {
-      throw new Error(error || "Failed to deduct credits");
+      throw new Error(creditError || "Failed to deduct credits");
     }
 
     const appointment = await db.appointment.create({
@@ -138,6 +130,8 @@ export async function bookAppointment(formData) {
         endTime,
         patientDescription,
         status: "SCHEDULED",
+        lockedCredits: cost ?? 0,
+        creditsReleased: false,
         videoSessionId: null,
       },
     });
@@ -306,15 +300,18 @@ export async function getAvailableTimeSlots(doctorId) {
       throw new Error("Doctor not found or not verified");
     }
 
-    // Fetch a single availability record
-    const availability = await db.availability.findFirst({
+    // Fetch all availability windows for this doctor
+    const availabilities = await db.availability.findMany({
       where: {
         doctorId: doctor.id,
         status: "AVAILABLE",
       },
+      orderBy: {
+        startTime: "asc",
+      },
     });
 
-    if (!availability) {
+    if (!availabilities || availabilities.length === 0) {
       throw new Error("No availability set by doctor");
     }
 
@@ -322,20 +319,7 @@ export async function getAvailableTimeSlots(doctorId) {
     const now = new Date();
     const days = [now, addDays(now, 1), addDays(now, 2), addDays(now, 3)];
 
-    // Derive time-of-day and overnight behavior from stored availability
-    const availabilityStartTemplate = new Date(availability.startTime);
-    const availabilityEndTemplate = new Date(availability.endTime);
-    const startHour = availabilityStartTemplate.getHours();
-    const startMinute = availabilityStartTemplate.getMinutes();
-    const endHour = availabilityEndTemplate.getHours();
-    const endMinute = availabilityEndTemplate.getMinutes();
-    const isOvernight =
-      availabilityEndTemplate.getDate() !==
-        availabilityStartTemplate.getDate() ||
-      availabilityEndTemplate <= availabilityStartTemplate;
-
     // Fetch existing appointments for the doctor over the next 4 days
-    const lastDay = endOfDay(days[3]);
     const lastOverlapDay = endOfDay(addDays(days[3], 1));
     const existingAppointments = await db.appointment.findMany({
       where: {
@@ -368,55 +352,70 @@ export async function getAvailableTimeSlots(doctorId) {
     for (const day of days) {
       const dayString = format(day, "yyyy-MM-dd");
       availableSlotsByDay[dayString] = [];
+      const seen = new Set();
 
-      // Build availability window for this specific day, respecting overnight ranges
-      const availabilityStart = new Date(day);
-      availabilityStart.setHours(startHour, startMinute, 0, 0);
+      for (const availability of availabilities) {
+        const availabilityStartTemplate = new Date(availability.startTime);
+        const availabilityEndTemplate = new Date(availability.endTime);
+        const startHour = availabilityStartTemplate.getHours();
+        const startMinute = availabilityStartTemplate.getMinutes();
+        const endHour = availabilityEndTemplate.getHours();
+        const endMinute = availabilityEndTemplate.getMinutes();
+        const isOvernight =
+          availabilityEndTemplate.getDate() !==
+            availabilityStartTemplate.getDate() ||
+          availabilityEndTemplate <= availabilityStartTemplate;
 
-      const availabilityEndBase = new Date(day);
-      availabilityEndBase.setHours(endHour, endMinute, 0, 0);
-      const availabilityEnd = isOvernight
-        ? addDays(availabilityEndBase, 1)
-        : availabilityEndBase;
+        const availabilityStart = new Date(day);
+        availabilityStart.setHours(startHour, startMinute, 0, 0);
 
-      let current = new Date(availabilityStart);
-      const end = new Date(availabilityEnd);
+        const availabilityEndBase = new Date(day);
+        availabilityEndBase.setHours(endHour, endMinute, 0, 0);
+        const availabilityEnd = isOvernight
+          ? addDays(availabilityEndBase, 1)
+          : availabilityEndBase;
 
-      while (
-        isBefore(addMinutes(current, 30), end) ||
-        +addMinutes(current, 30) === +end
-      ) {
-        const next = addMinutes(current, 30);
+        let current = new Date(availabilityStart);
+        const end = new Date(availabilityEnd);
 
-        // Skip past slots
-        if (isBefore(current, now)) {
-          current = next;
-          continue;
-        }
+        while (
+          isBefore(addMinutes(current, 30), end) ||
+          +addMinutes(current, 30) === +end
+        ) {
+          const next = addMinutes(current, 30);
 
-        const overlaps = existingAppointments.some((appointment) => {
-          const aStart = new Date(appointment.startTime);
-          const aEnd = new Date(appointment.endTime);
+          if (isBefore(current, now)) {
+            current = next;
+            continue;
+          }
 
-          return (
-            (current >= aStart && current < aEnd) ||
-            (next > aStart && next <= aEnd) ||
-            (current <= aStart && next >= aEnd)
-          );
-        });
+          const overlaps = existingAppointments.some((appointment) => {
+            const aStart = new Date(appointment.startTime);
+            const aEnd = new Date(appointment.endTime);
 
-        if (!overlaps) {
-          availableSlotsByDay[dayString].push({
-            startTime: current.toISOString(),
-            endTime: next.toISOString(),
-            startTimeMs: current.getTime(),
-            endTimeMs: next.getTime(),
-            formatted: `${fmtTime(current)} - ${fmtTime(next)}`,
-            day: fmtDay(current),
+            return (
+              (current >= aStart && current < aEnd) ||
+              (next > aStart && next <= aEnd) ||
+              (current <= aStart && next >= aEnd)
+            );
           });
-        }
 
-        current = next;
+          const key = `${current.getTime()}-${next.getTime()}`;
+
+          if (!overlaps && !seen.has(key)) {
+            seen.add(key);
+            availableSlotsByDay[dayString].push({
+              startTime: current.toISOString(),
+              endTime: next.toISOString(),
+              startTimeMs: current.getTime(),
+              endTimeMs: next.getTime(),
+              formatted: `${fmtTime(current)} - ${fmtTime(next)}`,
+              day: fmtDay(current),
+            });
+          }
+
+          current = next;
+        }
       }
     }
 

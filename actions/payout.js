@@ -5,10 +5,6 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { getSettings } from "@/lib/settings";
 
-const CREDIT_VALUE = 10; // $10 per credit total
-const PLATFORM_FEE_PER_CREDIT = 2; // $2 platform fee
-const DOCTOR_EARNINGS_PER_CREDIT = 8; // $8 to doctor
-
 /**
  * Request payout for all remaining credits
  */
@@ -69,8 +65,9 @@ export async function requestPayout(formData) {
     }
 
     const totalAmount = creditCount * settings.creditToNairaRate;
-    const platformFee = 0;
-    const netAmount = creditCount * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+    const adminPercentage = settings.adminEarningPercentage ?? 0;
+    const platformFee = Math.round((totalAmount * adminPercentage) / 100);
+    const netAmount = totalAmount - platformFee;
 
     // Create payout request
     const payout = await db.payout.create({
@@ -158,11 +155,24 @@ export async function getDoctorEarnings() {
       throw new Error("Doctor not found");
     }
 
-    // Get all completed appointments for this doctor
     const completedAppointments = await db.appointment.findMany({
       where: {
         doctorId: doctor.id,
         status: "COMPLETED",
+        creditsReleased: true,
+      },
+    });
+
+    const pendingAppointments = await db.appointment.findMany({
+      where: {
+        doctorId: doctor.id,
+        creditsReleased: false,
+        lockedCredits: {
+          gt: 0,
+        },
+        status: {
+          in: ["SCHEDULED", "COMPLETED"],
+        },
       },
     });
 
@@ -175,14 +185,18 @@ export async function getDoctorEarnings() {
       (appointment) => new Date(appointment.createdAt) >= currentMonth
     );
 
-    // Use doctor's actual credits from the user model
     const settings = await getSettings();
     const totalEarningsPoints = doctor.credits;
-    const totalEarningsNaira = doctor.credits * settings.doctorEarningPerCredit * settings.creditToNairaRate;
 
-    // Calculate this month's earnings (2 credits per appointment * $8 per credit)
-    const thisMonthEarningsPoints = thisMonthAppointments.length * settings.appointmentCreditCost;
-    const thisMonthEarningsNaira = thisMonthEarningsPoints * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+    const grossPerCredit = settings.creditToNairaRate;
+    const adminPercentage = settings.adminEarningPercentage ?? 0;
+    const netPerCredit = grossPerCredit * (1 - adminPercentage / 100);
+
+    const totalEarningsNaira = doctor.credits * netPerCredit;
+
+    const thisMonthEarningsPoints =
+      thisMonthAppointments.length * settings.appointmentCreditCost;
+    const thisMonthEarningsNaira = thisMonthEarningsPoints * netPerCredit;
 
     // Simple average per month calculation
     const averageEarningsPerMonth =
@@ -190,9 +204,14 @@ export async function getDoctorEarnings() {
         ? totalEarningsNaira / Math.max(1, new Date().getMonth() + 1)
         : 0;
 
-    // Get current credit balance for payout calculations
     const availableCredits = doctor.credits;
-    const availablePayout = doctor.credits * settings.doctorEarningPerCredit * settings.creditToNairaRate;
+    const availablePayout = doctor.credits * netPerCredit;
+
+    const pendingCredits = pendingAppointments.reduce(
+      (sum, appointment) => sum + (appointment.lockedCredits || 0),
+      0
+    );
+    const pendingPayout = pendingCredits * netPerCredit;
 
     return {
       earnings: {
@@ -204,6 +223,8 @@ export async function getDoctorEarnings() {
         averageEarningsPerMonth,
         availableCredits,
         availablePayout,
+        pendingCredits,
+        pendingPayout,
       },
     };
   } catch (error) {

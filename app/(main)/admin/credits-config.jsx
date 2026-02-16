@@ -12,6 +12,7 @@ export default function CreditsConfig({ initialSettings }) {
   const [appointmentCreditCost, setAppointmentCreditCost] = useState(initialSettings.appointmentCreditCost || 2);
   const [doctorEarningPerCredit, setDoctorEarningPerCredit] = useState(initialSettings.doctorEarningPerCredit || 8);
   const [creditToNairaRate, setCreditToNairaRate] = useState(initialSettings.creditToNairaRate || 1000);
+  const [adminEarningPercentage, setAdminEarningPercentage] = useState(initialSettings.adminEarningPercentage || 20);
   const [freeCredits, setFreeCredits] = useState(initialSettings.freeCredits || 2);
   const [standardCredits, setStandardCredits] = useState(initialSettings.standardCredits || 10);
   const [premiumCredits, setPremiumCredits] = useState(initialSettings.premiumCredits || 24);
@@ -22,6 +23,7 @@ export default function CreditsConfig({ initialSettings }) {
     fd.append("appointmentCreditCost", String(appointmentCreditCost));
     fd.append("doctorEarningPerCredit", String(doctorEarningPerCredit));
     fd.append("creditToNairaRate", String(creditToNairaRate));
+    fd.append("adminEarningPercentage", String(adminEarningPercentage));
     fd.append("freeCredits", String(freeCredits));
     fd.append("standardCredits", String(standardCredits));
     fd.append("premiumCredits", String(premiumCredits));
@@ -53,6 +55,10 @@ export default function CreditsConfig({ initialSettings }) {
             <Input type="number" value={creditToNairaRate} onChange={(e) => setCreditToNairaRate(Number(e.target.value))} />
           </div>
           <div className="space-y-2">
+            <Label>Admin Earning Percentage (%)</Label>
+            <Input type="number" value={adminEarningPercentage} onChange={(e) => setAdminEarningPercentage(Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
             <Label>Free Credits</Label>
             <Input type="number" value={freeCredits} onChange={(e) => setFreeCredits(Number(e.target.value))} />
           </div>
@@ -72,4 +78,3 @@ export default function CreditsConfig({ initialSettings }) {
     </Card>
   );
 }
-

@@ -79,14 +79,18 @@ export default async function DoctorDashboardPage() {
           />
         </TabsContent>
         <TabsContent value="availability" className="border-none p-0">
-          <AvailabilitySettings slots={availabilityData.slots || []} />
+          <AvailabilitySettings
+            slots={availabilityData.slots || []}
+            appointments={appointmentsData.appointments || []}
+          />
         </TabsContent>
         <TabsContent value="earnings" className="border-none p-0">
           <DoctorEarnings
             earnings={earningsData.earnings || {}}
             payouts={payoutsData.payouts || []}
             nairaRate={settings?.creditToNairaRate || 1000}
-            perCreditEarning={settings?.doctorEarningPerCredit || 8}
+            perCreditEarning={1 - (settings?.adminEarningPercentage ?? 0) / 100}
+            adminPercentage={settings?.adminEarningPercentage ?? 0}
           />
         </TabsContent>
       </div>

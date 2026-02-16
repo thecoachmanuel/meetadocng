@@ -2,8 +2,9 @@ import { TabsContent } from "@/components/ui/tabs";
 import { PendingDoctors } from "./components/pending-doctors";
 import { VerifiedDoctors } from "./components/verified-doctors";
 import { PendingPayouts } from "./components/pending-payouts";
-import { NewUsers } from "./components/new-users";
+import { NewUsers, UserCreditsManager } from "./components/new-users";
 import { Leaderboards } from "./components/leaderboards";
+import { EscrowAppointments } from "./components/escrow-appointments";
 import { getSiteSettings } from "@/actions/site-settings";
 import { getNewUsers, getLeaderboards, getAnalytics } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
@@ -13,6 +14,7 @@ import {
   getPendingDoctors,
   getVerifiedDoctors,
   getPendingPayouts,
+  getEscrowAppointments,
 } from "@/actions/admin";
 
 export default async function AdminPage() {
@@ -24,6 +26,7 @@ export default async function AdminPage() {
     getLeaderboards(),
     getSiteSettings(),
     getAnalytics(),
+    getEscrowAppointments(),
   ]);
 
   const pendingDoctorsData =
@@ -54,6 +57,10 @@ export default async function AdminPage() {
     results[6].status === "fulfilled" && results[6].value
       ? results[6].value
       : {};
+  const escrowData =
+    results[7].status === "fulfilled" && results[7].value
+      ? results[7].value
+      : { appointments: [] };
 
   return (
     <>
@@ -67,11 +74,13 @@ export default async function AdminPage() {
 
       <TabsContent value="payouts" className="border-none p-0">
         <PendingPayouts payouts={pendingPayoutsData.payouts || []} />
+        <EscrowAppointments appointments={escrowData.appointments || []} />
       </TabsContent>
 
       <TabsContent value="users" className="border-none p-0">
         <div className="space-y-6">
           <NewUsers users={usersData.users || []} />
+          <UserCreditsManager />
           <AnalyticsPanel stats={analytics || {}} />
         </div>
       </TabsContent>

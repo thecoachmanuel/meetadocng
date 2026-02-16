@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
+import { getSettings } from "@/lib/settings";
 
 /**
  * Set doctor's availability slots
@@ -48,32 +49,7 @@ export async function setAvailabilitySlots(formData) {
       throw new Error("Start time must be before end time");
     }
 
-    // Check if the doctor already has slots
-    const existingSlots = await db.availability.findMany({
-      where: {
-        doctorId: doctor.id,
-      },
-    });
-
-    // If slots exist, delete them all (we're replacing them)
-    if (existingSlots.length > 0) {
-      // Don't delete slots that already have appointments
-      const slotsWithNoAppointments = existingSlots.filter(
-        (slot) => !slot.appointment
-      );
-
-      if (slotsWithNoAppointments.length > 0) {
-        await db.availability.deleteMany({
-          where: {
-            id: {
-              in: slotsWithNoAppointments.map((slot) => slot.id),
-            },
-          },
-        });
-      }
-    }
-
-    // Create new availability slot
+    // Create new availability slot (additive, supports multiple windows)
     const newSlot = await db.availability.create({
       data: {
         doctorId: doctor.id,
@@ -88,6 +64,51 @@ export async function setAvailabilitySlots(formData) {
   } catch (error) {
     console.error("Failed to set availability slots:", error);
     throw new Error("Failed to set availability: " + error.message);
+  }
+}
+
+/**
+ * Delete a single availability slot for the authenticated doctor
+ */
+export async function deleteAvailabilitySlot(formData) {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const authUser = data.user;
+
+  try {
+    const doctor = await db.user.findUnique({
+      where: {
+        supabaseUserId: authUser.id,
+        role: "DOCTOR",
+      },
+    });
+
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+
+    const slotId = formData.get("slotId");
+
+    if (!slotId) {
+      throw new Error("Availability slot ID is required");
+    }
+
+    await db.availability.delete({
+      where: {
+        id: slotId,
+      },
+    });
+
+    revalidatePath("/doctor");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete availability slot:", error);
+    throw new Error("Failed to delete availability: " + error.message);
   }
 }
 
@@ -208,7 +229,6 @@ export async function cancelAppointment(formData) {
       throw new Error("Appointment ID is required");
     }
 
-    // Find the appointment with both patient and doctor details
     const appointment = await db.appointment.findUnique({
       where: {
         id: appointmentId,
@@ -223,63 +243,89 @@ export async function cancelAppointment(formData) {
       throw new Error("Appointment not found");
     }
 
-    // Verify the user is either the doctor or the patient for this appointment
     if (appointment.doctorId !== user.id && appointment.patientId !== user.id) {
       throw new Error("You are not authorized to cancel this appointment");
     }
 
-    // Perform cancellation in a transaction
+    const settings = await getSettings();
+
     await db.$transaction(async (tx) => {
-      // Update the appointment status to CANCELLED
+      const current = await tx.appointment.findUnique({
+        where: {
+          id: appointmentId,
+        },
+      });
+
+      if (!current) {
+        throw new Error("Appointment not found");
+      }
+
+      if (current.status === "CANCELLED") {
+        return;
+      }
+
+      let refundAmount = 0;
+      let doctorAdjustment = 0;
+
+      if (!current.creditsReleased) {
+        if (current.lockedCredits && current.lockedCredits > 0) {
+          refundAmount = current.lockedCredits;
+          doctorAdjustment = 0;
+        } else {
+          refundAmount = settings.appointmentCreditCost;
+          doctorAdjustment = settings.appointmentCreditCost;
+        }
+
+        if (refundAmount > 0) {
+          await tx.creditTransaction.create({
+            data: {
+              userId: current.patientId,
+              amount: refundAmount,
+              type: "APPOINTMENT_DEDUCTION",
+            },
+          });
+
+          await tx.user.update({
+            where: {
+              id: current.patientId,
+            },
+            data: {
+              credits: {
+                increment: refundAmount,
+              },
+            },
+          });
+
+          if (doctorAdjustment > 0) {
+            await tx.creditTransaction.create({
+              data: {
+                userId: current.doctorId,
+                amount: -doctorAdjustment,
+                type: "APPOINTMENT_DEDUCTION",
+              },
+            });
+
+            await tx.user.update({
+              where: {
+                id: current.doctorId,
+              },
+              data: {
+                credits: {
+                  decrement: doctorAdjustment,
+                },
+              },
+            });
+          }
+        }
+      }
+
       await tx.appointment.update({
         where: {
           id: appointmentId,
         },
         data: {
           status: "CANCELLED",
-        },
-      });
-
-      // Always refund credits to patient and deduct from doctor
-      // Create credit transaction for patient (refund)
-      await tx.creditTransaction.create({
-        data: {
-          userId: appointment.patientId,
-          amount: 2,
-          type: "APPOINTMENT_DEDUCTION",
-        },
-      });
-
-      // Create credit transaction for doctor (deduction)
-      await tx.creditTransaction.create({
-        data: {
-          userId: appointment.doctorId,
-          amount: -2,
-          type: "APPOINTMENT_DEDUCTION",
-        },
-      });
-
-      // Update patient's credit balance (increment)
-      await tx.user.update({
-        where: {
-          id: appointment.patientId,
-        },
-        data: {
-          credits: {
-            increment: 2,
-          },
-        },
-      });
-
-      // Update doctor's credit balance (decrement)
-      await tx.user.update({
-        where: {
-          id: appointment.doctorId,
-        },
-        data: {
-          credits: {
-            decrement: 2,
-          },
+          creditsReleased: true,
         },
       });
     });
@@ -391,11 +437,10 @@ export async function markAppointmentCompleted(formData) {
       throw new Error("Appointment ID is required");
     }
 
-    // Find the appointment
     const appointment = await db.appointment.findUnique({
       where: {
         id: appointmentId,
-        doctorId: doctor.id, // Ensure appointment belongs to this doctor
+        doctorId: doctor.id,
       },
       include: {
         patient: true,
@@ -406,12 +451,10 @@ export async function markAppointmentCompleted(formData) {
       throw new Error("Appointment not found or not authorized");
     }
 
-    // Check if appointment is currently scheduled
     if (appointment.status !== "SCHEDULED") {
       throw new Error("Only scheduled appointments can be marked as completed");
     }
 
-    // Check if current time is after the appointment end time
     const now = new Date();
     const appointmentEndTime = new Date(appointment.endTime);
 
@@ -421,14 +464,62 @@ export async function markAppointmentCompleted(formData) {
       );
     }
 
-    // Update the appointment status to COMPLETED
-    const updatedAppointment = await db.appointment.update({
-      where: {
-        id: appointmentId,
-      },
-      data: {
-        status: "COMPLETED",
-      },
+    const settings = await getSettings();
+
+    const updatedAppointment = await db.$transaction(async (tx) => {
+      const current = await tx.appointment.findUnique({
+        where: {
+          id: appointmentId,
+        },
+      });
+
+      if (!current) {
+        throw new Error("Appointment not found or not authorized");
+      }
+
+      if (current.status !== "SCHEDULED") {
+        throw new Error("Only scheduled appointments can be marked as completed");
+      }
+
+      let payoutCredits = 0;
+      let creditsReleased = current.creditsReleased;
+
+      if (!current.creditsReleased && current.lockedCredits && current.lockedCredits > 0) {
+        payoutCredits = current.lockedCredits;
+
+        await tx.creditTransaction.create({
+          data: {
+            userId: current.doctorId,
+            amount: payoutCredits,
+            type: "APPOINTMENT_DEDUCTION",
+          },
+        });
+
+        await tx.user.update({
+          where: {
+            id: current.doctorId,
+          },
+          data: {
+            credits: {
+              increment: payoutCredits,
+            },
+          },
+        });
+
+        creditsReleased = true;
+      }
+
+      const updated = await tx.appointment.update({
+        where: {
+          id: appointmentId,
+        },
+        data: {
+          status: "COMPLETED",
+          creditsReleased,
+        },
+      });
+
+      return updated;
     });
 
     revalidatePath("/doctor");

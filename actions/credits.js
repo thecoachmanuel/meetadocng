@@ -51,22 +51,15 @@ export async function deductCreditsForAppointment(userId, doctorId) {
       where: { id: userId },
     });
 
-    const doctor = await db.user.findUnique({
-      where: { id: doctorId },
-    });
+    if (!user) {
+      throw new Error("User not found");
+    }
 
-    // Ensure user has sufficient credits
     if (user.credits < settings.appointmentCreditCost) {
       throw new Error("Insufficient credits to book an appointment");
     }
 
-    if (!doctor) {
-      throw new Error("Doctor not found");
-    }
-
-    // Deduct credits from patient and add to doctor
     const result = await db.$transaction(async (tx) => {
-      // Create transaction record for patient (deduction)
       await tx.creditTransaction.create({
         data: {
           userId: user.id,
@@ -75,16 +68,6 @@ export async function deductCreditsForAppointment(userId, doctorId) {
         },
       });
 
-      // Create transaction record for doctor (addition)
-      await tx.creditTransaction.create({
-        data: {
-          userId: doctor.id,
-          amount: settings.appointmentCreditCost,
-          type: "APPOINTMENT_DEDUCTION", // Using same type for consistency
-        },
-      });
-
-      // Update patient's credit balance (decrement)
       const updatedUser = await tx.user.update({
         where: {
           id: user.id,
@@ -96,22 +79,13 @@ export async function deductCreditsForAppointment(userId, doctorId) {
         },
       });
 
-      // Update doctor's credit balance (increment)
-      await tx.user.update({
-        where: {
-          id: doctor.id,
-        },
-        data: {
-          credits: {
-            increment: settings.appointmentCreditCost,
-          },
-        },
-      });
-
-      return updatedUser;
+      return {
+        user: updatedUser,
+        cost: settings.appointmentCreditCost,
+      };
     });
 
-    return { success: true, user: result };
+    return { success: true, user: result.user, cost: result.cost };
   } catch (error) {
     console.error("Failed to deduct credits:", error);
     return { success: false, error: error.message };
