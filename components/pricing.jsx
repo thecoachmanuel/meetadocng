@@ -32,17 +32,28 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
         plan: plan.id,
       },
       callback: async (response) => {
+        if (!response?.reference) {
+          toast.error("Payment reference missing, please contact support.");
+          return;
+        }
         toast.info("Verifying payment...");
         try {
-          const result = await purchaseCredits(userId, plan.id);
-          if (result.success) {
-            toast.success("Payment successful! Credits added to your account.");
-            router.refresh();
-          } else {
-            toast.error(result.error || "Failed to add credits. Please contact support.");
+          const res = await fetch("/api/paystack/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ reference: response.reference }),
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.success) {
+            toast.error(data?.error || "Unable to verify payment. Please contact support.");
+            return;
           }
+          toast.success("Payment verified. Credits added to your account.");
+          router.refresh();
         } catch (error) {
-          toast.error("An error occurred. Please contact support.");
+          toast.error("An error occurred while verifying payment.");
         }
       },
       onClose: () => {

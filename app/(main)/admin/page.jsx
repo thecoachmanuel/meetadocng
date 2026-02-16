@@ -3,10 +3,12 @@ import { PendingDoctors } from "./components/pending-doctors";
 import { VerifiedDoctors } from "./components/verified-doctors";
 import { PendingPayouts } from "./components/pending-payouts";
 import { NewUsers, UserCreditsManager } from "./components/new-users";
+import { AnnouncementsPanel } from "./components/announcements";
+import { EnquiriesPanel } from "./components/enquiries";
 import { Leaderboards } from "./components/leaderboards";
 import { EscrowAppointments } from "./components/escrow-appointments";
 import { getSiteSettings } from "@/actions/site-settings";
-import { getNewUsers, getLeaderboards, getAnalytics } from "@/actions/admin";
+import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
 import SiteSettingsPanel from "./settings-panel";
 import CreditsConfig from "./credits-config";
@@ -27,6 +29,8 @@ export default async function AdminPage() {
     getSiteSettings(),
     getAnalytics(),
     getEscrowAppointments(),
+    getContactMessages(),
+    getAnnouncements(),
   ]);
 
   const pendingDoctorsData =
@@ -61,6 +65,14 @@ export default async function AdminPage() {
     results[7].status === "fulfilled" && results[7].value
       ? results[7].value
       : { appointments: [] };
+  const contactData =
+    results[8].status === "fulfilled" && results[8].value
+      ? results[8].value
+      : { messages: [] };
+  const announcementsData =
+    results[9].status === "fulfilled" && results[9].value
+      ? results[9].value
+      : { announcements: [] };
 
   return (
     <>
@@ -82,6 +94,8 @@ export default async function AdminPage() {
           <NewUsers users={usersData.users || []} />
           <UserCreditsManager />
           <AnalyticsPanel stats={analytics || {}} />
+          <EnquiriesPanel messages={contactData.messages || []} />
+          <AnnouncementsPanel announcements={announcementsData.announcements || []} />
         </div>
       </TabsContent>
 

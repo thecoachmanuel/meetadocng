@@ -27,6 +27,7 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [amount, setAmount] = useState("");
 
   const {
     thisMonthEarningsNaira = 0,
@@ -51,6 +52,9 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
     formData.append("bankName", bankName);
     formData.append("accountName", accountName);
     formData.append("accountNumber", accountNumber);
+    if (amount && Number(amount) > 0) {
+      formData.append("amount", String(amount));
+    }
     await submitPayoutRequest(formData);
   };
 
@@ -60,6 +64,7 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
       setBankName("");
       setAccountName("");
       setAccountNumber("");
+      setAmount("");
       toast.success("Payout request submitted successfully!");
     }
   }, [data]);
@@ -163,17 +168,21 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
 
             {pendingPayoutRequest ? (
               <div className="space-y-2">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Pending Credits</p>
+                    <p className="text-muted-foreground">Requested credits</p>
                     <p className="text-white font-medium">{pendingPayoutRequest.credits}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Pending Amount</p>
+                    <p className="text-muted-foreground">Requested gross amount</p>
+                    <p className="text-white font-medium">{formatNaira(pendingPayoutRequest.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Requested net amount</p>
                     <p className="text-white font-medium">{formatNaira(pendingPayoutRequest.netAmount)}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Bank Details</p>
+                    <p className="text-muted-foreground">Bank details</p>
                     <p className="text-white font-medium text-xs">{pendingPayoutRequest.bankName} • {pendingPayoutRequest.accountName} • {pendingPayoutRequest.accountNumber}</p>
                   </div>
                 </div>
@@ -268,6 +277,19 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="amount">Amount to withdraw (NGN)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min={0}
+                  step={100}
+                  placeholder="Leave empty to withdraw full available amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="bg-background border-emerald-900/20"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="bankName">Bank Name</Label>
                 <Input id="bankName" placeholder="e.g. Access Bank" value={bankName} onChange={(e) => setBankName(e.target.value)} className="bg-background border-emerald-900/20" required />
               </div>
@@ -283,7 +305,7 @@ export function DoctorEarnings({ earnings, payouts = [], nairaRate = 1000, perCr
 
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">Once processed by admin, {availableCredits} credits will be deducted from your account and {formatNaira(availablePayout)} will be transferred to your bank account.</AlertDescription>
+              <AlertDescription className="text-sm">Once processed by admin, the credits that correspond to your requested amount will be deducted from your account and the net payout will be transferred to your bank account.</AlertDescription>
             </Alert>
 
             <DialogFooter>

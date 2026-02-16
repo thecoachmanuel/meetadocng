@@ -229,7 +229,7 @@ export async function getAnalytics() {
           const adminPercentage = settings.adminEarningPercentage ?? 0;
           const netPerCredit = grossPerCredit * (1 - adminPercentage / 100);
           const naira = points * netPerCredit;
-          return { id: d.id, name: d.name, email: d.email, points, naira };
+          return { id: d.id, name: d.name, email: d.email, specialty: d.specialty, points, naira };
         })
       )
     ).filter(Boolean);
@@ -244,7 +244,7 @@ export async function getAnalytics() {
           const adminPercentage = settings.adminEarningPercentage ?? 0;
           const netPerCredit = grossPerCredit * (1 - adminPercentage / 100);
           const naira = points * netPerCredit;
-          return { id: d.id, name: d.name, email: d.email, points, naira };
+          return { id: d.id, name: d.name, email: d.email, specialty: d.specialty, points, naira };
         })
       )
     ).filter(Boolean);
@@ -317,6 +317,136 @@ export async function getAnalytics() {
       },
     };
   }
+}
+
+export async function getContactMessages() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  try {
+    const messages = await db.contactMessage.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return { messages };
+  } catch (error) {
+    console.error("Failed to get contact messages:", error);
+    return { messages: [] };
+  }
+}
+
+export async function updateContactMessageStatus(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const id = formData.get("id");
+  const status = formData.get("status");
+
+  if (!id || !["NEW", "IN_PROGRESS", "RESOLVED"].includes(status)) {
+    throw new Error("Invalid input");
+  }
+
+  await db.contactMessage.update({
+    where: { id },
+    data: { status },
+  });
+
+  revalidatePath("/admin");
+
+  return { success: true };
+}
+
+export async function getAnnouncements() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  try {
+    const items = await db.announcement.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+    return { announcements: items };
+  } catch (error) {
+    console.error("Failed to get announcements:", error);
+    return { announcements: [] };
+  }
+}
+
+export async function createAnnouncement(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const rawTitle = formData.get("title");
+  const rawBody = formData.get("body");
+  const rawScope = formData.get("scope");
+  const rawTargetEmail = formData.get("targetEmail");
+
+  const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
+  const body = typeof rawBody === "string" ? rawBody.trim() : "";
+  const scope = rawScope === "USER" ? "USER" : "GLOBAL";
+  const targetEmail = typeof rawTargetEmail === "string" ? rawTargetEmail.trim().toLowerCase() : "";
+
+  if (!title || !body) {
+    throw new Error("Title and body are required");
+  }
+
+  let createdById = null;
+  let targetUserId = null;
+
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  const authUser = data?.user || null;
+
+  if (authUser?.id) {
+    const admin = await db.user.findFirst({
+      where: {
+        OR: [{ supabaseUserId: authUser.id }, { email: authUser.email?.toLowerCase() || "" }],
+      },
+      select: { id: true },
+    });
+    if (admin) {
+      createdById = admin.id;
+    }
+  }
+
+  if (scope === "USER") {
+    if (!targetEmail) {
+      throw new Error("Target user email is required for user-specific announcements");
+    }
+    const targetUser = await db.user.findUnique({
+      where: { email: targetEmail },
+      select: { id: true },
+    });
+    if (!targetUser) {
+      throw new Error("Target user not found");
+    }
+    targetUserId = targetUser.id;
+  }
+
+  await db.announcement.create({
+    data: {
+      title,
+      body,
+      scope,
+      targetUserId,
+      createdById,
+    },
+  });
+
+  revalidatePath("/admin");
+
+  return { success: true };
 }
 
 export async function adminAdjustUserCredits(formData) {

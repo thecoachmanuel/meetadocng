@@ -55,12 +55,11 @@ export default async function AdminLayout({ children }) {
     <div className="container mx-auto px-4 py-8">
       <PageHeader icon={<ShieldCheck />} title="Admin Settings" />
 
-      {/* Vertical tabs on larger screens / Horizontal tabs on mobile */}
       <Tabs
         defaultValue="pending"
-        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start"
       >
-        <TabsList className="md:col-span-1 bg-muted/30 border h-auto md:h-40 flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-md md:space-y-2 sm:space-x-2 md:space-x-0 overflow-x-auto sm:overflow-x-auto md:overflow-visible whitespace-nowrap scroll-smooth">
+        <TabsList className="md:col-span-1 bg-muted/30 border h-auto flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-xl md:space-y-2 sm:space-x-2 md:space-x-0 sm:overflow-x-auto sm:whitespace-nowrap md:whitespace-normal scroll-smooth">
           {adminTabs.map((tab) => {
             const Icon = tab.icon;
 

@@ -13,95 +13,128 @@ export default async function Home() {
   const hs = s.homepageSections || {};
   const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
   const hero = hs.hero || {
-    badge: "Healthcare made simple",
-    titleLine1: "Connect with doctors",
-    titleHighlightLine2: "anytime, anywhere",
+    badge: "Healthcare, made easy",
+    titleLine1: "Your doctor is just a tap away",
+    titleHighlightLine2: "trusted care, anytime",
     description:
-      "Book appointments, consult via video, and manage your healthcare journey all in one secure platform.",
+      "MeetADoc connects you to licensed doctors for secure video consultations, prescriptions, and follow-up care — all from the comfort of your home.",
     primaryCtaText: "Get Started",
     primaryCtaLink: "/onboarding",
     secondaryCtaText: "Find Doctors",
     secondaryCtaLink: "/doctors",
   };
+  const cta = hs.cta || {
+    title: "Ready to take control of your healthcare?",
+    description:
+      "Join thousands of users who have simplified their healthcare journey with our platform. Get started today and experience healthcare the way it should be.",
+    primaryCtaText: "Sign Up Now",
+    primaryCtaLink: "/sign-up",
+    secondaryCtaText: "View Pricing",
+    secondaryCtaLink: "#pricing",
+  };
+  const creditBenefitsContent =
+    Array.isArray(hs.creditBenefits) && hs.creditBenefits.length
+      ? hs.creditBenefits
+      : creditBenefits;
+  const testimonialsData =
+    Array.isArray(hs.testimonials) && hs.testimonials.length
+      ? hs.testimonials
+      : testimonials;
   return (
     <div className="bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-32">
+      <section className="relative overflow-hidden py-24 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <Badge
-                variant="outline"
-                className="bg-emerald-900/30 border-emerald-700/30 px-4 py-2 text-emerald-400 text-sm font-medium"
-              >
-                {hero.badge}
-              </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-                {hero.titleLine1} <br />
-                <span className="gradient-title">{hero.titleHighlightLine2}</span>
-              </h1>
-              <p className="text-muted-foreground text-lg md:text-xl max-w-md">
-                {hero.description}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
-                >
-                  <Link href={hero.primaryCtaLink}>
-                    {hero.primaryCtaText} <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-900/40 bg-linear-to-r from-emerald-950/60 via-background to-background px-6 py-10 md:px-10 md:py-14">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-8">
+                <Badge
                   variant="outline"
-                  size="lg"
-                  className="border-emerald-700/30 hover:bg-muted/80"
+                  className="bg-emerald-900/30 border-emerald-700/30 px-4 py-2 text-emerald-400 text-sm font-medium"
                 >
-                  <Link href={hero.secondaryCtaLink}>{hero.secondaryCtaText}</Link>
-                </Button>
+                  {hero.badge}
+                </Badge>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                  {hero.titleLine1} <br />
+                  <span className="gradient-title">{hero.titleHighlightLine2}</span>
+                </h1>
+                <p className="text-muted-foreground text-lg md:text-xl max-w-md">
+                  {hero.description}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    <Link href={hero.primaryCtaLink}>
+                      {hero.primaryCtaText} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="border-emerald-700/30 hover:bg-muted/80"
+                  >
+                    <Link href={hero.secondaryCtaLink}>{hero.secondaryCtaText}</Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative h-[320px] md:h-[380px] lg:h-[440px] rounded-2xl overflow-hidden border border-emerald-900/40 bg-emerald-950/40">
+                <Image
+                  src={s.heroImageUrl || "/banner2.png"}
+                  alt="Doctor consultation"
+                  fill
+                  priority
+                  className="object-cover md:pt-6 rounded-2xl"
+                />
               </div>
             </div>
 
-            <div className="relative h-[400px] lg:h-[500px] rounded-xl overflow-hidden">
-              <Image
-                src={s.heroImageUrl || "/banner2.png"}
-                alt="Doctor consultation"
-                fill
-                priority
-                className="object-cover md:pt-14 rounded-xl"
-              />
-            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-[-120px] w-[260px] bg-emerald-700/20 blur-3xl" />
+            <div className="pointer-events-none absolute -left-32 bottom-0 w-[260px] h-[260px] rounded-full bg-emerald-500/10 blur-3xl" />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* How It Works Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              How It Works
+              How MeetADoc Works
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Our platform makes healthcare accessible with just a few clicks
+              Create your account, load consultation credits, and book a time that works for you. MeetADoc handles secure video, payments, and records so you can focus on feeling better.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {(dynamicSections.length ? dynamicSections : features).map((feature, index) => (
               <Card
                 key={index}
-                className="bg-card border-emerald-900/20 hover:border-emerald-800/40 transition-all duration-300"
+                className="relative bg-background/60 border-emerald-900/30 hover:border-emerald-700/50 hover:-translate-y-1 transition-all duration-300"
               >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-semibold text-white">
+                <CardHeader className="pb-3 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    {feature.icon && (
+                      <div className="h-10 w-10 rounded-full bg-emerald-900/40 flex items-center justify-center">
+                        {feature.icon}
+                      </div>
+                    )}
+                    <div className="text-xs uppercase tracking-wide text-emerald-400">
+                      Step {index + 1}
+                    </div>
+                  </div>
+                  <CardTitle className="text-lg font-semibold text-white">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -109,7 +142,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Pricing Section with green medical styling */}
       <section id="pricing" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -128,11 +160,16 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="mx-auto">
-            <Pricing rate={s.creditToNairaRate || 1000} freeCredits={s.freeCredits || 2} standardCredits={s.standardCredits || 10} premiumCredits={s.premiumCredits || 24} />
-
-            {/* Description */}
-            <Card className="mt-12 bg-muted/20 border-emerald-900/30">
+          <div className="mx-auto grid gap-10 lg:grid-cols-2 lg:items-start">
+            <div>
+              <Pricing
+                rate={s.creditToNairaRate || 1000}
+                freeCredits={s.freeCredits || 2}
+                standardCredits={s.standardCredits || 10}
+                premiumCredits={s.premiumCredits || 24}
+              />
+            </div>
+            <Card className="bg-muted/20 border-emerald-900/30 lg:mt-4">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-white flex items-center">
                   <Stethoscope className="h-5 w-5 mr-2 text-emerald-400" />
@@ -141,7 +178,29 @@ export default async function Home() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {creditBenefits.map((benefit, index) => (
+                  <li className="flex items-start">
+                    <div className="mr-3 mt-1 bg-emerald-900/20 p-1 rounded-full">
+                      <svg
+                        className="h-4 w-4 text-emerald-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        ></path>
+                      </svg>
+                    </div>
+                    <p className="text-muted-foreground">
+                      Each video consultation uses {s.appointmentCreditCost || 2} credits (approximately ₦
+                      {((s.appointmentCreditCost || 2) * (s.creditToNairaRate || 1000)).toLocaleString()}).
+                    </p>
+                  </li>
+                  {creditBenefitsContent.map((benefit, index) => (
                     <li key={index} className="flex items-start">
                       <div className="mr-3 mt-1 bg-emerald-900/20 p-1 rounded-full">
                         <svg
@@ -172,7 +231,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Testimonials with green medical accents */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -191,10 +249,10 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
+            {testimonialsData.map((testimonial, index) => (
               <Card
                 key={index}
-                className="border-emerald-900/20 hover:border-emerald-800/40 transition-all"
+                className="border-emerald-900/20 bg-background/60 hover:border-emerald-800/40 hover:bg-background transition-all"
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center mb-4">
@@ -223,18 +281,16 @@ export default async function Home() {
       </section>
 
       {/* CTA Section with green medical styling */}
-      <section className="py-20">
+      <section className="relative z-0 py-20">
         <div className="container mx-auto px-4">
-          <Card className="bg-gradient-to-r from-emerald-900/30 to-emerald-950/20 border-emerald-800/20">
+          <Card className="bg-linear-to-r from-emerald-900/30 to-emerald-950/20 border-emerald-800/20">
             <CardContent className="p-8 md:p-12 lg:p-16 relative overflow-hidden">
               <div className="max-w-2xl relative z-10">
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                  Ready to take control of your healthcare?
+                  {cta.title}
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Join thousands of users who have simplified their healthcare
-                  journey with our platform. Get started today and experience
-                  healthcare the way it should be.
+                  {cta.description}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button
@@ -242,7 +298,7 @@ export default async function Home() {
                     size="lg"
                     className="bg-emerald-600 text-white hover:bg-emerald-700"
                   >
-                    <Link href="/sign-up">Sign Up Now</Link>
+                    <Link href={cta.primaryCtaLink}>{cta.primaryCtaText}</Link>
                   </Button>
                   <Button
                     asChild
@@ -250,7 +306,7 @@ export default async function Home() {
                     size="lg"
                     className="border-emerald-700/30 hover:bg-muted/80"
                   >
-                    <Link href="#pricing">View Pricing</Link>
+                    <Link href={cta.secondaryCtaLink}>{cta.secondaryCtaText}</Link>
                   </Button>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatNaira } from "@/lib/currency";
 
 export default function AnalyticsPanel({ stats }) {
@@ -19,8 +20,49 @@ export default function AnalyticsPanel({ stats }) {
     totalAllTime = 0,
     timeline = [],
   } = platformFees || {};
+  const maxUserMonthlyCalls = (usersMonthlyCalls || []).reduce(
+    (max, u) => (u.calls > max ? u.calls : max),
+    0
+  );
+  const maxDoctorMonthlyEarnings = (doctorsMonthlyEarnings || []).reduce(
+    (max, d) => (d.naira > max ? d.naira : max),
+    0
+  );
+  const onExportCsv = () => {
+    window.open("/api/admin/analytics/export/csv", "_blank");
+  };
+  const onExportPdf = () => {
+    window.open("/admin/analytics/report", "_blank");
+  };
   return (
     <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium text-white">Analytics Overview</div>
+          <div className="text-xs text-muted-foreground">
+            Key usage, earnings, and platform fee metrics for the marketplace.
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-emerald-900/60 text-emerald-300 bg-background/60 hover:bg-emerald-900/40"
+            onClick={onExportCsv}
+          >
+            Export CSV
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700"
+            onClick={onExportPdf}
+          >
+            Export PDF
+          </Button>
+        </div>
+      </div>
       <Card className="bg-muted/20 border-emerald-900/20">
         <CardHeader>
           <CardTitle className="text-xl font-bold text-white">Users Calls</CardTitle>
@@ -33,9 +75,24 @@ export default function AnalyticsPanel({ stats }) {
                 <div className="text-sm text-muted-foreground">No data available</div>
               ) : (
                 usersMonthlyCalls.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between">
-                    <div className="text-white">{u.name || u.email}</div>
-                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">{u.calls}</Badge>
+                  <div key={u.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="text-white text-sm">{u.name || u.email}</div>
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400"
+                      >
+                        {u.calls}
+                      </Badge>
+                    </div>
+                    {maxUserMonthlyCalls > 0 && (
+                      <div className="h-1.5 rounded-full bg-emerald-950/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500/80"
+                          style={{ width: `${Math.max(6, (u.calls / maxUserMonthlyCalls) * 100)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -71,9 +128,24 @@ export default function AnalyticsPanel({ stats }) {
                 <div className="text-sm text-muted-foreground">No data available</div>
               ) : (
                 doctorsMonthlyEarnings.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between">
-                    <div className="text-white">{d.name || d.email}</div>
-                    <Badge variant="outline" className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400">₦{d.naira} ({d.points} pts)</Badge>
+                  <div key={d.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="text-white text-sm">{d.name || d.email}</div>
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-900/20 border-emerald-900/30 text-emerald-400"
+                      >
+                        ₦{d.naira} ({d.points} pts)
+                      </Badge>
+                    </div>
+                    {maxDoctorMonthlyEarnings > 0 && (
+                      <div className="h-1.5 rounded-full bg-emerald-950/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500/80"
+                          style={{ width: `${Math.max(6, (d.naira / maxDoctorMonthlyEarnings) * 100)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))
               )}

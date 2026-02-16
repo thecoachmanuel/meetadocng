@@ -138,6 +138,55 @@ model Payout {
   @@index([doctorId, status])
 }
 
+model ContactMessage {
+  id        String         @id @default(uuid())
+  userId    String?
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String
+  subject   String
+  message   String         @db.Text
+  status    ContactStatus  @default(NEW)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Announcement {
+  id           String             @id @default(uuid())
+  title        String
+  body         String             @db.Text
+  scope        AnnouncementScope
+  targetUserId String?
+  targetUser   User?              @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdById  String?
+  createdBy    User?              @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime           @default(now())
+  reads        AnnouncementRead[]
+}
+
+enum AnnouncementScope {
+  GLOBAL
+  USER
+}
+
+model AnnouncementRead {
+  id             String        @id @default(uuid())
+  announcementId String
+  userId         String
+  readAt         DateTime      @default(now())
+
+  announcement   Announcement  @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+}
+
 model SiteSettings {
   id               String   @id @default("singleton")
   siteTitle        String?

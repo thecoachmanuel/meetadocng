@@ -27,6 +27,14 @@ export async function updateSiteSettings(formData) {
   const rawSettings = Object.fromEntries(formData.entries());
   const settings = { ...rawSettings };
 
+  if (typeof settings.homepageSections === "string") {
+    try {
+      settings.homepageSections = JSON.parse(settings.homepageSections);
+    } catch {
+      delete settings.homepageSections;
+    }
+  }
+
   const intFields = [
     "appointmentCreditCost",
     "doctorEarningPerCredit",

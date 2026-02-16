@@ -116,7 +116,7 @@ export function PendingPayouts({ payouts }) {
                             <div className="flex items-center">
                               <DollarSign className="h-4 w-4 mr-1 text-emerald-400" />
                               <span>
-                                {payout.credits} credits • {formatNaira(payout.netAmount)}
+                                {payout.credits} credits • {formatNaira(payout.amount)} gross • {formatNaira(payout.netAmount)} net
                               </span>
                             </div>
                             <div className="flex items-center">
@@ -244,13 +244,25 @@ export function PendingPayouts({ payouts }) {
                     <span className="text-white">{formatNaira(selectedPayout.amount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Platform fee:</span>
+                    <span className="text-muted-foreground">
+                      Platform fee
+                      {selectedPayout.amount > 0 && (
+                        <> ({((selectedPayout.platformFee / selectedPayout.amount) * 100).toFixed(0)}%)</>
+                      )}
+                      :
+                    </span>
                     <span className="text-white">{formatNaira(selectedPayout.platformFee)}</span>
                   </div>
                   <div className="border-t border-emerald-900/20 pt-3 flex justify-between font-medium">
                     <span className="text-white">Net payout:</span>
                     <span className="text-emerald-400">{formatNaira(selectedPayout.netAmount)}</span>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Gross is the total value of the requested credits before any fees.
+                    Platform fee is the portion kept by the platform.
+                    Net payout is what will actually be transferred to the doctor
+                    (gross minus platform fee).
+                  </p>
                   <div className="border-t border-emerald-900/20 pt-3">
                     <p className="text-sm font-medium text-muted-foreground">Bank Details</p>
                     <p className="text-white text-sm">
@@ -329,20 +341,53 @@ export function PendingPayouts({ payouts }) {
                 </AlertDescription>
               </Alert>
 
-              <div className="bg-muted/20 p-4 rounded-lg border border-emerald-900/20">
+              <div className="bg-muted/20 p-4 rounded-lg border border-emerald-900/20 space-y-2">
                 <div className="flex justify-between mb-2">
                   <span className="text-muted-foreground">Doctor:</span>
                   <span className="text-white">
                     Dr. {selectedPayout.doctor.name}
                   </span>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-muted-foreground">Amount to pay:</span>
-                  <span className="text-emerald-400 font-medium">{formatNaira(selectedPayout.netAmount)}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Requested credits:</span>
+                  <span className="text-white font-medium">
+                    {selectedPayout.credits}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bank:</span>
-                  <span className="text-white text-sm">{selectedPayout.bankName} • {selectedPayout.accountName} • {selectedPayout.accountNumber}</span>
+                  <span className="text-muted-foreground">Requested gross amount:</span>
+                  <span className="text-white">
+                    {formatNaira(selectedPayout.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Platform fee
+                    {selectedPayout.amount > 0 && (
+                      <> ({((selectedPayout.platformFee / selectedPayout.amount) * 100).toFixed(0)}%)</>
+                    )}
+                    :
+                  </span>
+                  <span className="text-white">
+                    {formatNaira(selectedPayout.platformFee)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-emerald-900/20 pt-2">
+                  <span className="text-muted-foreground">Net payout to doctor:</span>
+                  <span className="text-emerald-400 font-medium">
+                    {formatNaira(selectedPayout.netAmount)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Net payout equals the gross amount minus the platform fee.
+                  Approving this request pays the net amount to the doctor while the
+                  platform keeps the fee.
+                </p>
+                <div className="border-t border-emerald-900/20 pt-2">
+                  <span className="text-sm text-muted-foreground">Bank details</span>
+                  <p className="text-white text-sm">
+                    {selectedPayout.bankName} • {selectedPayout.accountName} • {selectedPayout.accountNumber}
+                  </p>
                 </div>
               </div>
             </div>

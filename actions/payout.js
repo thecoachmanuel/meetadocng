@@ -42,6 +42,7 @@ export async function requestPayout(formData) {
     const bankName = formData.get("bankName");
     const accountName = formData.get("accountName");
     const accountNumber = formData.get("accountNumber");
+    const rawAmount = formData.get("amount");
 
     if (!bankName || !accountName || !accountNumber) {
       throw new Error("Bank name, account name, and account number are required");
@@ -63,17 +64,32 @@ export async function requestPayout(formData) {
 
     // Get doctor's current credit balance
     const settings = await getSettings();
-    const creditCount = doctor.credits;
+    const availableCredits = doctor.credits;
 
-    if (creditCount === 0) {
+    if (availableCredits === 0) {
       throw new Error("No credits available for payout");
     }
 
-    if (creditCount < 1) {
+    if (availableCredits < 1) {
       throw new Error("Minimum 1 credit required for payout");
     }
 
-    const totalAmount = creditCount * settings.creditToNairaRate;
+    let requestedAmount = Number(rawAmount || 0);
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+      requestedAmount = availableCredits * settings.creditToNairaRate;
+    }
+
+    const maxAmount = availableCredits * settings.creditToNairaRate;
+    if (requestedAmount > maxAmount) {
+      throw new Error("Requested amount exceeds available earnings");
+    }
+
+    const requestedCredits = Math.floor(requestedAmount / settings.creditToNairaRate);
+    if (requestedCredits < 1) {
+      throw new Error("Requested amount is too low for payout");
+    }
+
+    const totalAmount = requestedCredits * settings.creditToNairaRate;
     const adminPercentage = settings.adminEarningPercentage ?? 0;
     const platformFee = Math.round((totalAmount * adminPercentage) / 100);
     const netAmount = totalAmount - platformFee;
@@ -83,7 +99,7 @@ export async function requestPayout(formData) {
       data: {
         doctorId: doctor.id,
         amount: totalAmount,
-        credits: creditCount,
+        credits: requestedCredits,
         platformFee,
         netAmount,
         paypalEmail: authUser.email || doctor.email || "",
