@@ -61,6 +61,7 @@ export async function updateSiteSettings(formData) {
     throw new Error("Site settings table not found. Please run database migration.");
   }
   revalidatePath("/", "layout");
+  revalidatePath("/");
   revalidatePath("/admin");
   return { success: true };
 }
