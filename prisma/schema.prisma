@@ -36,6 +36,10 @@ model User {
   availabilities      Availability[]
   transactions        CreditTransaction[]
   payouts             Payout[]
+  contactMessages     ContactMessage[]
+  createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
+  targetedAnnouncements Announcement[] @relation("AnnouncementTargetUser")
+  announcementReads   AnnouncementRead[]
 }
 
 enum UserRole {
@@ -163,7 +167,7 @@ model Announcement {
   body         String             @db.Text
   scope        AnnouncementScope
   targetUserId String?
-  targetUser   User?              @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+  targetUser   User?              @relation("AnnouncementTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
   createdById  String?
   createdBy    User?              @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt    DateTime           @default(now())
