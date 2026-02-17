@@ -37,8 +37,8 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
           </span>
         )}
       </Button>
-		{open && (
-			<div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
+      {open && (
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
           <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-900/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Notifications
@@ -90,3 +90,4 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
     </div>
   );
 }
+
