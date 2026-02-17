@@ -6,14 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/actions/onboarding";
 
+export const dynamic = "force-dynamic";
+
 export default async function PatientAppointmentsPage() {
-  const user = await getCurrentUser();
+	let user;
+	try {
+		user = await getCurrentUser();
+	} catch (e) {
+		console.error("Failed to load current user:", e);
+	}
 
-  if (!user || user.role !== "PATIENT") {
-    redirect("/onboarding");
-  }
+	if (!user || user.role !== "PATIENT") {
+		redirect("/onboarding");
+	}
 
-  const { appointments, error } = await getPatientAppointments();
+	let appointments = [];
+	let error = null;
+	try {
+		const result = await getPatientAppointments();
+		appointments = result?.appointments || [];
+		error = result?.error || null;
+	} catch (e) {
+		console.error("Failed to load patient appointments:", e);
+		error = "Failed to load appointments";
+	}
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
