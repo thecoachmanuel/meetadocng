@@ -12,7 +12,7 @@ export default async function Home() {
   const s = await getSettings();
   const hs = s.homepageSections || {};
   const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
-  const hero = hs.hero || {
+  const hero = {
     badge: "Healthcare, made easy",
     titleLine1: "Your doctor is just a tap away",
     titleHighlightLine2: "trusted care, anytime",
@@ -44,7 +44,7 @@ export default async function Home() {
     <div className="bg-background">
       <section className="relative overflow-hidden py-24 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="relative overflow-hidden rounded-3xl border border-emerald-900/40 bg-linear-to-r from-emerald-950/60 via-background to-background px-6 py-10 md:px-10 md:py-14">
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-900/40 bg-background px-6 py-10 md:px-10 md:py-14">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8">
                 <Badge
@@ -91,9 +91,6 @@ export default async function Home() {
                 />
               </div>
             </div>
-
-            <div className="pointer-events-none absolute inset-y-0 right-[-120px] w-[260px] bg-emerald-700/20 blur-3xl" />
-            <div className="pointer-events-none absolute -left-32 bottom-0 w-[260px] h-[260px] rounded-full bg-emerald-500/10 blur-3xl" />
           </div>
         </div>
       </section>
