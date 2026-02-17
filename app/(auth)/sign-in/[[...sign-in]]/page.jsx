@@ -26,7 +26,7 @@ export default function Page() {
       toast.error(error.message || "Failed to sign in");
       return;
     }
-    toast.success("Signed in successfully");
+    toast.success("Signed in successfully. Redirecting to your dashboard...");
     try {
       const res = await fetch("/api/me", { method: "POST" });
       const data = await res.json();
@@ -56,11 +56,7 @@ export default function Page() {
       },
     });
     setLoading(false);
-    if (error) {
-      toast.error(error.message || "Failed to start Google sign in");
-      return;
-    }
-    toast.message("Redirecting to Google to complete sign in");
+    if (error) toast.error(error.message);
   };
 
   return (

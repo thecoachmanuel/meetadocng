@@ -24,7 +24,7 @@ export default async function DoctorProfileLayout({ children, params }) {
     const { doctor } = await getDoctorById(id);
     if (!doctor) redirect("/doctors");
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto">
         <PageHeader
           title={"Dr. " + doctor.name}
           backLink={`/doctors/${doctor.specialty}`}

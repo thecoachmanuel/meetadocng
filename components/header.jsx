@@ -57,6 +57,12 @@ export default async function Header() {
         {/* Action Buttons */}
         <div className="flex items-center space-x-2">
           {user && (
+            <NotificationsBell
+              initialItems={notifications.items}
+              initialUnreadCount={notifications.unreadCount}
+            />
+          )}
+          {user && (
             <>
               {/* Admin Links */}
               {user?.role === "ADMIN" && (
@@ -164,10 +170,6 @@ export default async function Header() {
                 alt={user.name || "Account"}
                 size={36}
                 className="ml-2"
-              />
-              <NotificationsBell
-                initialItems={notifications.items}
-                initialUnreadCount={notifications.unreadCount}
               />
               <SignOutButton />
             </>
