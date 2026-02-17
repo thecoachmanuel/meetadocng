@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
-import { adminAdjustUserCredits } from "@/actions/admin";
+import { adminAdjustUserCredits, adminCreateUser } from "@/actions/admin";
 import { toast } from "sonner";
 
 export function NewUsers({ users }) {
@@ -73,6 +73,38 @@ export function NewUsers({ users }) {
 
   const hasUsers = derivedUsers.length > 0;
 
+  const { loading: creating, data: createData, fn: createUserFn } = useFetch(adminCreateUser);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newRole, setNewRole] = useState("PATIENT");
+  const [newSpecialty, setNewSpecialty] = useState("");
+
+  useEffect(() => {
+    if (createData?.success) {
+      setNewName("");
+      setNewEmail("");
+      setNewRole("PATIENT");
+      setNewSpecialty("");
+      toast.success("User created successfully");
+    }
+  }, [createData]);
+
+  const onCreateUser = async (e) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append("name", newName);
+    fd.append("email", newEmail);
+    fd.append("role", newRole);
+    if (newRole === "DOCTOR") {
+      fd.append("specialty", newSpecialty);
+    }
+    try {
+      await createUserFn(fd);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   return (
     <Card className="bg-muted/20 border-emerald-900/20">
       <CardHeader>
@@ -91,6 +123,61 @@ export function NewUsers({ users }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <form onSubmit={onCreateUser} className="grid gap-3 md:grid-cols-4 items-end">
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-wide">Name</Label>
+            <Input
+              placeholder="Full name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="h-9 bg-background/60 border-emerald-900/40 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-wide">Email</Label>
+            <Input
+              type="email"
+              placeholder="user@example.com"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+              className="h-9 bg-background/60 border-emerald-900/40 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-wide">Role</Label>
+            <select
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              className="w-full h-9 rounded-md border border-emerald-900/40 bg-background/60 px-2 text-xs text-foreground"
+            >
+              <option value="PATIENT">Patient</option>
+              <option value="DOCTOR">Doctor</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          {newRole === "DOCTOR" && (
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-wide">Specialty</Label>
+              <Input
+                placeholder="e.g. Cardiologist"
+                value={newSpecialty}
+                onChange={(e) => setNewSpecialty(e.target.value)}
+                className="h-9 bg-background/60 border-emerald-900/40 text-sm"
+              />
+            </div>
+          )}
+          <div className="md:col-span-4 flex justify-end">
+            <Button
+              type="submit"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={creating}
+            >
+              {creating ? "Creating..." : "Add user"}
+            </Button>
+          </div>
+        </form>
+
         <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-xs text-muted-foreground md:hidden">
             <span>Patients: {totalPatients}</span>

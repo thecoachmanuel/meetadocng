@@ -376,11 +376,62 @@ export async function getAnnouncements() {
       orderBy: { createdAt: "desc" },
       take: 20,
     });
-    return { announcements: items };
+
+    if (items.length === 0) {
+      return { announcements: [] };
+    }
+
+    const reads = await db.announcementRead.groupBy({
+      by: ["announcementId"],
+      where: {
+        announcementId: {
+          in: items.map((a) => a.id),
+        },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const readMap = new Map(reads.map((r) => [r.announcementId, r._count._all]));
+
+    const announcements = items.map((a) => ({
+      ...a,
+      views: readMap.get(a.id) || 0,
+    }));
+
+    return { announcements };
   } catch (error) {
     console.error("Failed to get announcements:", error);
     return { announcements: [] };
   }
+}
+
+export async function deleteAnnouncement(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const id = formData.get("id");
+
+  if (!id) {
+    throw new Error("Announcement ID is required");
+  }
+
+  await db.announcementRead.deleteMany({
+    where: {
+      announcementId: id,
+    },
+  });
+
+  await db.announcement.delete({
+    where: {
+      id,
+    },
+  });
+
+  revalidatePath("/admin");
+
+  return { success: true };
 }
 
 export async function createAnnouncement(formData) {
@@ -491,6 +542,49 @@ export async function adminAdjustUserCredits(formData) {
         type: mode === "sale" ? "CREDIT_PURCHASE" : "ADMIN_ADJUSTMENT",
       },
     });
+  });
+
+  revalidatePath("/admin");
+
+  return { success: true };
+}
+
+export async function adminCreateUser(formData) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const rawEmail = formData.get("email");
+  const rawName = formData.get("name");
+  const rawRole = formData.get("role");
+  const rawSpecialty = formData.get("specialty");
+
+  const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+  const name = typeof rawName === "string" ? rawName.trim() : "";
+  const role = rawRole === "DOCTOR" || rawRole === "ADMIN" || rawRole === "PATIENT" ? rawRole : "PATIENT";
+  const specialty = typeof rawSpecialty === "string" ? rawSpecialty.trim() : null;
+
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  const existing = await db.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (existing) {
+    throw new Error("A user with this email already exists");
+  }
+
+  await db.user.create({
+    data: {
+      email,
+      supabaseUserId: email,
+      name: name || null,
+      role,
+      specialty: role === "DOCTOR" ? specialty : null,
+    },
   });
 
   revalidatePath("/admin");
