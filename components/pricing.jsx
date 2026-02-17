@@ -5,10 +5,9 @@ import { Card, CardContent } from "./ui/card";
 import Script from "next/script";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { purchaseCredits } from "@/actions/credits";
 import { useRouter } from "next/navigation";
 
-const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 24 }) => {
+const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 50 }) => {
 	const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 	const router = useRouter();
 	const [paystackReady, setPaystackReady] = React.useState(false);
