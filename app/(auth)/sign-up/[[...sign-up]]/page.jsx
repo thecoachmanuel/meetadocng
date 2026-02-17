@@ -47,7 +47,11 @@ export default function Page() {
       },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
+    if (error) {
+      toast.error(error.message || "Failed to start Google sign up");
+      return;
+    }
+    toast.message("Redirecting to Google to complete sign up");
   };
 
   return (

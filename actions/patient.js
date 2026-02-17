@@ -9,7 +9,7 @@ export async function getPatientAppointments() {
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data?.user) {
-    throw new Error("Unauthorized");
+		return { error: "Unauthorized" };
   }
 
   const authUser = data.user;
