@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -120,19 +120,27 @@ export function EscrowAppointments({ appointments }) {
 
   const isDialogOpen = !!selectedAppointment && !!actionType;
 
-  const filteredAppointments = localAppointments.filter((appointment) => {
-    const matchesStatus =
-      statusFilter === "ALL" || appointment.status === statusFilter;
+  const filteredAppointments = useMemo(() => {
+    const list = localAppointments.filter((appointment) => {
+      const matchesStatus =
+        statusFilter === "ALL" || appointment.status === statusFilter;
 
-    const doctorText = `${appointment.doctor?.name || ""} ${
-      appointment.doctor?.email || ""
-    }`.toLowerCase();
-    const filterText = doctorFilter.trim().toLowerCase();
-    const matchesDoctor =
-      filterText.length === 0 || doctorText.includes(filterText);
+      const doctorText = `${appointment.doctor?.name || ""} ${
+        appointment.doctor?.email || ""
+      }`.toLowerCase();
+      const filterText = doctorFilter.trim().toLowerCase();
+      const matchesDoctor =
+        filterText.length === 0 || doctorText.includes(filterText);
 
-    return matchesStatus && matchesDoctor;
-  });
+      return matchesStatus && matchesDoctor;
+    });
+
+    return list.sort((a, b) => {
+      const aTime = new Date(a.startTime).getTime();
+      const bTime = new Date(b.startTime).getTime();
+      return bTime - aTime;
+    });
+  }, [localAppointments, statusFilter, doctorFilter]);
 
   return (
     <div className="mt-6">

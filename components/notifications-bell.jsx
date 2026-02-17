@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
-import { markAllNotificationsRead } from "@/actions/notifications";
+import { markAllNotificationsRead, getUserNotifications } from "@/actions/notifications";
+
+const POLL_INTERVAL_MS = 15000;
 
 export default function NotificationsBell({ initialItems, initialUnreadCount }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(initialItems || []);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount || 0);
+  const [hasMounted, setHasMounted] = useState(false);
+  const lastSeenCreatedAtRef = useRef(
+    initialItems && initialItems.length > 0
+      ? new Date(initialItems[0].createdAt).getTime()
+      : 0
+  );
+  const audioRef = useRef(null);
   const { loading, fn } = useFetch(markAllNotificationsRead);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const onToggle = () => {
     setOpen((prev) => !prev);
@@ -22,8 +35,54 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
     setUnreadCount(0);
   };
 
+  useEffect(() => {
+    if (!hasMounted) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await getUserNotifications();
+        if (!res || cancelled) return;
+
+        const { items: freshItems, unreadCount: freshUnread } = res;
+
+        if (freshItems && freshItems.length > 0) {
+          const newestCreatedAt = new Date(freshItems[0].createdAt).getTime();
+          const prevNewest = lastSeenCreatedAtRef.current;
+
+          if (newestCreatedAt > prevNewest) {
+            lastSeenCreatedAtRef.current = newestCreatedAt;
+
+            const existingIds = new Set(items.map((i) => i.id));
+            const newItems = freshItems.filter((i) => !existingIds.has(i.id));
+            if (newItems.length > 0 && audioRef.current) {
+              try {
+                audioRef.current.play();
+              } catch {}
+            }
+          }
+        }
+
+        setItems(freshItems || []);
+        setUnreadCount(freshUnread || 0);
+      } catch {}
+    };
+
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [hasMounted, items]);
+
   return (
     <div className="relative">
+      <audio
+        ref={audioRef}
+        src="/notification.mp3"
+        preload="auto"
+      />
       <Button
         type="button"
         variant="ghost"
@@ -38,7 +97,7 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
         )}
       </Button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-80 sm:max-w-none max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
           <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-900/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Notifications
@@ -90,4 +149,3 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
     </div>
   );
 }
-
