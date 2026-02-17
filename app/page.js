@@ -7,19 +7,28 @@ import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
 import { creditBenefits, features, testimonials } from "@/lib/data";
 import { getSettings } from "@/lib/settings";
+import { checkUser } from "@/lib/checkUser";
 
 export default async function Home() {
-  const s = await getSettings();
+	const [s, user] = await Promise.all([getSettings(), checkUser()]);
   const hs = s.homepageSections || {};
   const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
-  const hero = {
+	const hero = {
     badge: "Healthcare, made easy",
     titleLine1: "Your doctor is just a tap away",
     titleHighlightLine2: "trusted care, anytime",
     description:
       "MeetADoc connects you to licensed doctors for secure video consultations, prescriptions, and follow-up care — all from the comfort of your home.",
-    primaryCtaText: "Get Started",
-    primaryCtaLink: "/onboarding",
+		primaryCtaText: "Get Started",
+		primaryCtaLink: user
+			? user.role === "PATIENT"
+				? "/appointments"
+				: user.role === "DOCTOR"
+				? "/doctor"
+				: user.role === "ADMIN"
+				? "/admin"
+				: "/onboarding"
+			: "/sign-up",
     secondaryCtaText: "Find Doctors",
     secondaryCtaLink: "/doctors",
   };
