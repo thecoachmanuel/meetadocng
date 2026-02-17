@@ -1,8 +1,8 @@
 import { Inter } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Header from "@/components/header";
-import FloatingLiveChat from "@/components/floating-live-chat";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSettings } from "@/lib/settings";
 
@@ -34,15 +34,25 @@ export default async function RootLayout({ children }) {
         >
           <Header />
           <main className="flex-1">{children}</main>
-          <FloatingLiveChat supportData={await (async () => {
-            const { getSupportOverview } = await import("@/actions/support-chat");
-            return getSupportOverview();
-          })()} />
           <Toaster richColors />
 
-          <footer className="bg-muted/50 py-12">
-            <div className="container mx-auto px-4 text-center text-gray-200">
-              <p>{copyright}</p>
+          <footer className="bg-muted/50 py-8 border-t border-emerald-900/20">
+            <div className="container mx-auto px-4 flex flex-col gap-4 text-gray-200 text-sm md:flex-row md:items-center md:justify-between">
+              <p className="text-xs md:text-sm text-muted-foreground">{copyright}</p>
+              <div className="flex items-center justify-center gap-6">
+                <Link
+                  href="/about"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  About us
+                </Link>
+                <Link
+                  href="/contact"
+                  className="hover:text-emerald-400 transition-colors"
+                >
+                  Contact us
+                </Link>
+              </div>
             </div>
           </footer>
         </ThemeProvider>

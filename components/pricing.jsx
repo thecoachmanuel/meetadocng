@@ -9,18 +9,23 @@ import { purchaseCredits } from "@/actions/credits";
 import { useRouter } from "next/navigation";
 
 const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 24 }) => {
-  const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-  const router = useRouter();
+	const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+	const router = useRouter();
+	const [paystackReady, setPaystackReady] = React.useState(false);
 
-  const startPayment = async (plan) => {
-    if (!userId || !userEmail) {
-      toast.error("Sign in as a patient to purchase credits");
-      return;
-    }
-    if (!paystackKey || !window.PaystackPop) {
-      toast.error("Payment system not available");
-      return;
-    }
+	const isAuthenticatedPatient = Boolean(userId && userEmail);
+	const paystackConfigured = Boolean(paystackKey);
+	const canPurchase = isAuthenticatedPatient && paystackConfigured && paystackReady;
+
+	const startPayment = async (plan) => {
+		if (!userId || !userEmail) {
+			toast.error("Sign in as a patient to purchase credits");
+			return;
+		}
+		if (!paystackKey || !window.PaystackPop) {
+			toast.error("Payment system not available");
+			return;
+		}
 
     const handler = window.PaystackPop.setup({
       key: paystackKey,
@@ -70,9 +75,12 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
     { id: "premium", name: "Premium", price: premiumCredits * rate, credits: premiumCredits },
   ];
 
-  return (
-    <>
-      <Script src="https://js.paystack.co/v1/inline.js" />
+	return (
+		<>
+			<Script
+				src="https://js.paystack.co/v1/inline.js"
+				onLoad={() => setPaystackReady(true)}
+			/>
       <Card className="border-emerald-900/30 shadow-lg bg-linear-to-b from-emerald-950/30 to-transparent">
         <CardContent className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -85,11 +93,26 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
                 </div>
                 {plan.price === 0 ? (
                   <Button disabled variant="outline">Included</Button>
-                ) : (
-                  <Button onClick={() => startPayment(plan)} className="bg-emerald-600 hover:bg-emerald-700">
-                    Buy Credits
-                  </Button>
-                )}
+								) : (
+									<>
+										<Button
+											onClick={() => startPayment(plan)}
+											className="bg-emerald-600 hover:bg-emerald-700"
+											disabled={!canPurchase}
+										>
+											Buy Credits
+										</Button>
+										{!canPurchase && (
+											<p className="mt-2 text-xs text-muted-foreground">
+												{!isAuthenticatedPatient
+														? "Sign in as a patient to purchase credits."
+														: !paystackConfigured
+														? "Payments are not available. Contact support."
+														: "Preparing payment, please wait."}
+											</p>
+										)}
+									</>
+								)}
               </div>
             ))}
           </div>

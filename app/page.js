@@ -11,6 +11,16 @@ import { getSettings } from "@/lib/settings";
 
 export default async function Home() {
 	const [s, user] = await Promise.all([getSettings(), checkUser()]);
+
+	const role = user?.role;
+	const redirectMap = {
+		ADMIN: "/admin",
+		DOCTOR: "/doctor",
+		PATIENT: "/appointments",
+		UNASSIGNED: "/onboarding",
+	};
+	const dashboardHref = role ? redirectMap[role] || "/" : null;
+	const authCtaHref = dashboardHref || "/sign-up";
   const hs = s.homepageSections || {};
   const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
   const hero = {
@@ -20,7 +30,7 @@ export default async function Home() {
     description:
       "MeetADoc connects you to licensed doctors for secure video consultations, prescriptions, and follow-up care — all from the comfort of your home.",
     primaryCtaText: "Get Started",
-    primaryCtaLink: "/onboarding",
+    primaryCtaLink: authCtaHref,
     secondaryCtaText: "Find Doctors",
     secondaryCtaLink: "/doctors",
   };
@@ -29,7 +39,7 @@ export default async function Home() {
     description:
       "Join thousands of users who have simplified their healthcare journey with our platform. Get started today and experience healthcare the way it should be.",
     primaryCtaText: "Sign Up Now",
-    primaryCtaLink: "/sign-up",
+    primaryCtaLink: authCtaHref,
     secondaryCtaText: "View Pricing",
     secondaryCtaLink: "#pricing",
   };

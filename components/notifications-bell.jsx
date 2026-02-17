@@ -27,7 +27,6 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
       ? new Date(initialItems[0].createdAt).getTime()
       : 0
   );
-  const audioRef = useRef(null);
   const { loading, fn } = useFetch(markAllNotificationsRead);
   const { fn: markOne } = useFetch(markNotificationRead);
 
@@ -77,14 +76,6 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
 
           if (newestCreatedAt > prevNewest) {
             lastSeenCreatedAtRef.current = newestCreatedAt;
-
-            const existingIds = new Set(items.map((i) => i.id));
-            const newItems = freshItems.filter((i) => !existingIds.has(i.id));
-            if (newItems.length > 0 && audioRef.current) {
-              try {
-                audioRef.current.play();
-              } catch {}
-            }
           }
         }
 
@@ -102,11 +93,6 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
 
   return (
     <div className="relative">
-      <audio
-        ref={audioRef}
-        src="/notification.mp3"
-        preload="auto"
-      />
       <Button
         type="button"
         variant="ghost"
@@ -121,7 +107,7 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
         )}
       </Button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-80 sm:max-w-none max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 transform w-[calc(100vw-2rem)] max-w-xs sm:w-80 sm:max-w-none max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
           <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-900/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Notifications
