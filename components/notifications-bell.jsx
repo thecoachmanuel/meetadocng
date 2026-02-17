@@ -4,7 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
-import { markAllNotificationsRead, getUserNotifications } from "@/actions/notifications";
+import { markAllNotificationsRead, markNotificationRead, getUserNotifications } from "@/actions/notifications";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const POLL_INTERVAL_MS = 15000;
 
@@ -13,6 +20,8 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
   const [items, setItems] = useState(initialItems || []);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount || 0);
   const [hasMounted, setHasMounted] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const lastSeenCreatedAtRef = useRef(
     initialItems && initialItems.length > 0
       ? new Date(initialItems[0].createdAt).getTime()
@@ -20,6 +29,7 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
   );
   const audioRef = useRef(null);
   const { loading, fn } = useFetch(markAllNotificationsRead);
+  const { fn: markOne } = useFetch(markNotificationRead);
 
   useEffect(() => {
     setHasMounted(true);
@@ -27,6 +37,20 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
 
   const onToggle = () => {
     setOpen((prev) => !prev);
+  };
+
+  const openItem = async (item) => {
+    setSelectedItem(item);
+    setModalOpen(true);
+    setOpen(false);
+
+    if (!item.read) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, read: true } : i)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      try {
+        await markOne(item.id);
+      } catch {}
+    }
   };
 
   const onMarkAllRead = async () => {
@@ -118,12 +142,14 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
               </div>
             ) : (
               items.map((item) => (
-                <div
+                <button
                   key={item.id}
-                  className={`rounded-md px-3 py-2 border text-xs ${
+                  type="button"
+                  onClick={() => openItem(item)}
+                  className={`w-full text-left rounded-md px-3 py-2 border text-xs transition-colors ${
                     item.read
-                      ? "border-emerald-900/20 bg-background/40 text-muted-foreground"
-                      : "border-emerald-800/60 bg-emerald-900/30 text-white"
+                      ? "border-emerald-900/20 bg-background/40 text-muted-foreground hover:bg-background/70"
+                      : "border-emerald-800/60 bg-emerald-900/30 text-white hover:bg-emerald-900/50"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -140,12 +166,34 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
                   <div className="mt-1 text-[10px] text-emerald-400">
                     {item.scope === "GLOBAL" ? "Announcement" : "Direct message"}
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>
         </div>
       )}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto border-emerald-900/40 bg-background/95">
+          {selectedItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-base sm:text-lg flex items-center justify-between gap-2">
+                  <span className="truncate mr-2">{selectedItem.title}</span>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    {new Date(selectedItem.createdAt).toLocaleString()}
+                  </span>
+                </DialogTitle>
+                <DialogDescription className="text-[11px] text-emerald-400">
+                  {selectedItem.scope === "GLOBAL" ? "Announcement" : "Direct message"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-3 text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
+                {selectedItem.body}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

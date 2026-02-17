@@ -41,6 +41,8 @@ model User {
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
   targetedAnnouncements Announcement[] @relation("AnnouncementTargetUser")
   announcementReads   AnnouncementRead[]
+  supportMessagesSent SupportMessage[] @relation("SupportMessagesFrom")
+  supportMessagesReceived SupportMessage[] @relation("SupportMessagesTo")
 }
 
 enum UserRole {
@@ -190,6 +192,19 @@ model AnnouncementRead {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([announcementId, userId])
+}
+
+model SupportMessage {
+  id        String   @id @default(uuid())
+  fromId    String
+  toId      String
+  from      User     @relation("SupportMessagesFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("SupportMessagesTo", fields: [toId], references: [id], onDelete: Cascade)
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  @@index([fromId, toId, createdAt])
 }
 
 model SiteSettings {

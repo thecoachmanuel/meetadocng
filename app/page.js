@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
+import { checkUser } from "@/lib/checkUser";
 import { creditBenefits, features, testimonials } from "@/lib/data";
 import { getSettings } from "@/lib/settings";
 
 export default async function Home() {
-  const s = await getSettings();
+	const [s, user] = await Promise.all([getSettings(), checkUser()]);
   const hs = s.homepageSections || {};
   const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
   const hero = {
@@ -158,14 +159,16 @@ export default async function Home() {
           </div>
 
           <div className="mx-auto grid gap-10 lg:grid-cols-2 lg:items-start">
-            <div>
-              <Pricing
-                rate={s.creditToNairaRate || 1000}
-                freeCredits={s.freeCredits || 2}
-                standardCredits={s.standardCredits || 10}
-                premiumCredits={s.premiumCredits || 24}
-              />
-            </div>
+				<div>
+				  <Pricing
+						userEmail={user?.email}
+						userId={user?.id}
+						rate={s.creditToNairaRate || 1000}
+						freeCredits={s.freeCredits || 2}
+						standardCredits={s.standardCredits || 10}
+						premiumCredits={s.premiumCredits || 24}
+					  />
+				</div>
             <Card className="bg-muted/20 border-emerald-900/30 lg:mt-4">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-white flex items-center">

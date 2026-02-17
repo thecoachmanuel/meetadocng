@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabase-client";
-import { ensureBucket } from "@/actions/storage";
 import { updateProfile, deleteAvatar } from "@/actions/profile";
-import useFetch from "@/hooks/use-fetch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,8 +16,6 @@ export default function AccountPage() {
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { fn: createBucket } = useFetch(ensureBucket);
 
   useEffect(() => {
     const load = async () => {
@@ -45,23 +41,30 @@ export default function AccountPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading(true);
-    await createBucket("avatars");
     const { data } = await supabaseClient.auth.getUser();
     const u = data.user;
-    const path = `${u.id}/avatar-${Date.now()}-${file.name}`;
-    const up = await supabaseClient.storage.from("avatars").upload(path, file, { upsert: true });
-    if (up.error) {
-      toast.error(up.error.message);
+    const fdUpload = new FormData();
+    fdUpload.append("file", file);
+    fdUpload.append("folder", `avatars/${u.id}`);
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fdUpload,
+      });
+      const dataJson = await res.json();
+      if (!res.ok || !dataJson?.url) {
+        throw new Error(dataJson?.error || "Upload failed");
+      }
+      setAvatarUrl(dataJson.url);
+      const fd = new FormData();
+      fd.append("avatarUrl", dataJson.url);
+      await updateProfile(fd);
+      toast.success("Avatar updated");
+    } catch (err) {
+      toast.error(err.message || "Failed to upload avatar");
+    } finally {
       setLoading(false);
-      return;
     }
-    const pub = supabaseClient.storage.from("avatars").getPublicUrl(path);
-    setAvatarUrl(pub.data.publicUrl);
-    const fd = new FormData();
-    fd.append("avatarUrl", pub.data.publicUrl);
-    await updateProfile(fd);
-    setLoading(false);
-    toast.success("Avatar updated");
   };
 
   const onDeleteAvatar = async () => {

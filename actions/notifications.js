@@ -126,3 +126,45 @@ export async function markAllNotificationsRead() {
   return { success: true };
 }
 
+export async function markNotificationRead(announcementId) {
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  const authUser = data?.user || null;
+
+  if (!authUser) {
+    return { success: false };
+  }
+
+  const email = authUser.email?.toLowerCase() || "";
+
+  const user = await db.user.findFirst({
+    where: {
+      OR: [{ supabaseUserId: authUser.id }, { email }],
+    },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return { success: false };
+  }
+
+  if (!announcementId) {
+    return { success: false };
+  }
+
+  await db.announcementRead.upsert({
+    where: {
+      announcementId_userId: {
+        announcementId,
+        userId: user.id,
+      },
+    },
+    create: {
+      announcementId,
+      userId: user.id,
+    },
+    update: {},
+  });
+
+  return { success: true };
+}

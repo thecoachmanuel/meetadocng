@@ -228,25 +228,35 @@ export default function OnboardingPage() {
               />
               <div className="mt-2">
                 <Label htmlFor="credentialFile">Or upload credential file</Label>
-                <Input id="credentialFile" type="file" onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const { data } = await supabaseClient.auth.getUser();
-                  const u = data.user;
-                  const path = `${u.id}/credential-${Date.now()}-${file.name}`;
-                  try {
-                    await ensureBucket("credentials");
-                    const up = await supabaseClient.storage.from("credentials").upload(path, file, { upsert: true });
-                    if (up.error) {
-                      return;
+                <Input
+                  id="credentialFile"
+                  type="file"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const { data } = await supabaseClient.auth.getUser();
+                    const u = data.user;
+                    const fdUpload = new FormData();
+                    fdUpload.append("file", file);
+                    fdUpload.append("folder", `credentials/${u.id}`);
+                    try {
+                      const res = await fetch("/api/upload", {
+                        method: "POST",
+                        body: fdUpload,
+                      });
+                      const uploadJson = await res.json();
+                      if (!res.ok || !uploadJson?.url) {
+                        throw new Error(uploadJson?.error || "Upload failed");
+                      }
+                      setValue("credentialUrl", uploadJson.url);
+                      setCredentialFileUrl(uploadJson.url);
+                      clearErrors("credentialUrl");
+                      toast.success("Credential uploaded");
+                    } catch (err) {
+                      toast.error(err.message || "Failed to upload credential");
                     }
-                    const pub = supabaseClient.storage.from("credentials").getPublicUrl(path);
-                    setValue("credentialUrl", pub.data.publicUrl);
-                    setCredentialFileUrl(pub.data.publicUrl);
-                    clearErrors("credentialUrl");
-                    toast.success("Credential uploaded");
-                  } catch {}
-                }} />
+                  }}
+                />
               </div>
               {errors.credentialUrl && (
                 <p className="text-sm font-medium text-red-500 mt-1">
