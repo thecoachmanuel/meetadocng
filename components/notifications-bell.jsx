@@ -32,20 +32,20 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-semibold text-black px-1.5 py-0.5">
+          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-emerald-500 text-xs font-semibold text-black px-1.5 py-0.5">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </Button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto rounded-lg border border-emerald-900/30 bg-background/95 backdrop-blur-sm shadow-lg z-30">
           <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-900/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Notifications
             </span>
             <button
               type="button"
-              className="text-[11px] text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+              className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
               onClick={onMarkAllRead}
               disabled={loading || unreadCount === 0}
             >
@@ -54,31 +54,31 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
           </div>
           <div className="p-3 space-y-2">
             {items.length === 0 ? (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 You have no notifications.
               </div>
             ) : (
               items.map((item) => (
                 <div
                   key={item.id}
-                  className={`rounded-md px-3 py-2 border text-xs ${
+                  className={`rounded-md px-3 py-2 border text-xs sm:text-sm ${
                     item.read
                       ? "border-emerald-900/20 bg-background/40 text-muted-foreground"
                       : "border-emerald-800/60 bg-emerald-900/30 text-white"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="font-medium truncate max-w-[70%]">
+                    <div className="font-medium truncate max-w-[70%] text-sm">
                       {item.title}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[11px] sm:text-xs text-muted-foreground">
                       {new Date(item.createdAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <div className="text-[11px] leading-snug line-clamp-3 whitespace-pre-line">
+                  <div className="text-xs sm:text-sm leading-snug line-clamp-3 whitespace-pre-line">
                     {item.body}
                   </div>
-                  <div className="mt-1 text-[10px] text-emerald-400">
+                  <div className="mt-1 text-[11px] sm:text-xs text-emerald-400">
                     {item.scope === "GLOBAL" ? "Announcement" : "Direct message"}
                   </div>
                 </div>
@@ -90,4 +90,3 @@ export default function NotificationsBell({ initialItems, initialUnreadCount }) 
     </div>
   );
 }
-
