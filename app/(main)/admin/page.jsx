@@ -8,7 +8,7 @@ import { EnquiriesPanel } from "./components/enquiries";
 import { Leaderboards } from "./components/leaderboards";
 import { EscrowAppointments } from "./components/escrow-appointments";
 import { getSiteSettings } from "@/actions/site-settings";
-import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements } from "@/actions/admin";
+import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements, getProcessedPayouts } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
 import SiteSettingsPanel from "./settings-panel";
 import CreditsConfig from "./credits-config";
@@ -31,6 +31,7 @@ export default async function AdminPage() {
     getEscrowAppointments(),
     getContactMessages(),
     getAnnouncements(),
+    getProcessedPayouts(),
   ]);
 
   const pendingDoctorsData =
@@ -73,6 +74,10 @@ export default async function AdminPage() {
     results[9].status === "fulfilled" && results[9].value
       ? results[9].value
       : { announcements: [] };
+  const processedPayoutsData =
+    results[10].status === "fulfilled" && results[10].value
+      ? results[10].value
+      : { payouts: [] };
 
   return (
     <>
@@ -85,7 +90,7 @@ export default async function AdminPage() {
       </TabsContent>
 
       <TabsContent value="payouts" className="border-none p-0">
-        <PendingPayouts payouts={pendingPayoutsData.payouts || []} />
+	        <PendingPayouts payouts={pendingPayoutsData.payouts || []} completedPayouts={processedPayoutsData.payouts || []} />
         <EscrowAppointments appointments={escrowData.appointments || []} />
       </TabsContent>
 

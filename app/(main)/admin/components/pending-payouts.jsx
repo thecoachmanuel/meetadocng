@@ -35,7 +35,7 @@ import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 import { BarLoader } from "react-spinners";
 
-export function PendingPayouts({ payouts }) {
+export function PendingPayouts({ payouts, completedPayouts = [] }) {
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
 
@@ -169,6 +169,85 @@ export function PendingPayouts({ payouts }) {
           )}
         </CardContent>
       </Card>
+
+			{completedPayouts && completedPayouts.length > 0 && (
+				<Card className="mt-6 bg-muted/10 border-emerald-900/10">
+					<CardHeader>
+						<CardTitle className="text-lg font-semibold text-white">
+							Completed Payouts History
+						</CardTitle>
+						<CardDescription>
+							Recent payouts that have been processed for doctors.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+							{completedPayouts.map((payout) => (
+								<div
+									key={payout.id}
+									className="flex flex-col gap-2 rounded-lg border border-emerald-900/20 bg-background/60 p-3 text-xs md:text-sm"
+								>
+									<div className="flex flex-wrap items-center justify-between gap-2">
+										<div className="flex items-center gap-2">
+											<User className="h-4 w-4 text-emerald-400" />
+											<div>
+												<p className="font-medium text-white">
+													Dr. {payout.doctor?.name || "Unknown"}
+												</p>
+												<p className="text-muted-foreground">
+													{payout.doctor?.specialty || "Doctor"}
+												</p>
+											</div>
+										</div>
+										<Badge
+											variant="outline"
+											className="border-emerald-900/40 bg-emerald-900/10 text-emerald-300"
+										>
+											Processed
+										</Badge>
+									</div>
+									<div className="mt-1 grid gap-2 md:grid-cols-2">
+										<div className="space-y-1">
+											<p className="text-muted-foreground">Credits paid out</p>
+											<p className="text-white font-medium">
+												{payout.credits} credits
+											</p>
+										</div>
+										<div className="space-y-1">
+											<p className="text-muted-foreground">Net amount</p>
+											<p className="text-emerald-400 font-medium">
+												{formatNaira(payout.netAmount)}
+											</p>
+										</div>
+										<div className="space-y-1">
+											<p className="text-muted-foreground">Platform fee</p>
+											<p className="text-white">
+												{formatNaira(payout.platformFee)}
+											</p>
+										</div>
+										<div className="space-y-1">
+											<p className="text-muted-foreground">Processed on</p>
+											<p className="text-white">
+												{payout.processedAt
+														? format(new Date(payout.processedAt), "MMM d, yyyy 'at' h:mm a")
+														: "—"}
+											</p>
+										</div>
+										<div className="space-y-1 md:col-span-2">
+											<p className="text-muted-foreground">Bank details</p>
+											<p className="text-white">
+												{[payout.bankName, payout.accountName, payout.accountNumber]
+														.filter(Boolean)
+														.join(" • ") || "Not provided"}
+											</p>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			)}
 
       {/* Payout Details Dialog */}
       {selectedPayout && !showApproveDialog && (

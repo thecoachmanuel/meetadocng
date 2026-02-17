@@ -56,7 +56,14 @@ export async function deductCreditsForAppointment(userId, doctorId) {
     }
 
     if (user.credits < settings.appointmentCreditCost) {
-      throw new Error("Insufficient credits to book an appointment");
+      const missing = settings.appointmentCreditCost - user.credits;
+      throw new Error(
+        `You do not have enough credits to book this appointment. You have ${user.credits} credit${
+          user.credits === 1 ? "" : "s"
+        } and this appointment costs ${settings.appointmentCreditCost} credits. You need ${missing} more credit${
+          missing === 1 ? "" : "s"
+        }. Please purchase more credits on the Pricing page.`,
+      );
     }
 
     const result = await db.$transaction(async (tx) => {

@@ -59,7 +59,7 @@ export default async function AdminLayout({ children }) {
         defaultValue="pending"
         className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start"
       >
-        <TabsList className="md:col-span-1 bg-muted/30 border h-auto flex sm:flex-row md:flex-col w-full p-2 md:p-1 rounded-xl md:space-y-2 sm:space-x-2 md:space-x-0 sm:overflow-x-auto sm:whitespace-nowrap md:whitespace-normal scroll-smooth">
+        <TabsList className="md:col-span-1 bg-muted/30 border h-auto flex flex-row md:flex-col w-full max-w-full p-2 md:p-1 rounded-xl md:space-y-2 space-x-2 md:space-x-0 overflow-x-auto whitespace-nowrap md:whitespace-normal scroll-smooth">
           {adminTabs.map((tab) => {
             const Icon = tab.icon;
 

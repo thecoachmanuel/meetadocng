@@ -159,7 +159,7 @@ export async function bookAppointment(formData) {
     return { success: true, appointment: appointment };
   } catch (error) {
     console.error("Failed to book appointment:", error);
-    throw new Error("Failed to book appointment:" + error.message);
+    throw new Error(error?.message || "Failed to book appointment");
   }
 }
 

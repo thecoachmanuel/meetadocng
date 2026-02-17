@@ -124,6 +124,38 @@ export async function getLeaderboards() {
   }
 }
 
+export async function getProcessedPayouts() {
+	const isAdmin = await verifyAdmin();
+	if (!isAdmin) throw new Error("Unauthorized");
+
+	try {
+		const payouts = await db.payout.findMany({
+			where: {
+				status: "PROCESSED",
+			},
+			include: {
+				doctor: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+						specialty: true,
+					},
+				},
+			},
+			orderBy: {
+				processedAt: "desc",
+			},
+			take: 50,
+		});
+
+		return { payouts };
+	} catch (error) {
+		console.error("Failed to fetch processed payouts:", error);
+		return { payouts: [] };
+	}
+}
+
 export async function getAnalytics() {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) throw new Error("Unauthorized");

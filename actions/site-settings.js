@@ -2,8 +2,8 @@
 
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
+import { getCloudinary } from "@/lib/cloudinary";
 
 async function ensure() {
   // Intentionally no-op to avoid crashing when table doesn't exist
@@ -76,31 +76,48 @@ export async function updateSiteSettings(formData) {
 
 export async function uploadSiteAsset(formData) {
   const supabase = await supabaseServer();
-  const admin = supabaseAdmin();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) throw new Error("Unauthorized");
-  const user = data.user;
-
-  const bucket = "site";
-  await admin.storage.createBucket(bucket).catch(() => {});
 
   const file = formData.get("file");
   const target = formData.get("target"); // logoUrl | faviconUrl | heroImageUrl
-  if (!file || !target) throw new Error("Invalid upload");
-  const path = `${target}-${Date.now()}-${file.name}`;
+  if (!file || typeof file === "string" || !target) throw new Error("Invalid upload");
 
-  const up = await admin.storage.from(bucket).upload(path, file, { upsert: true });
-  if (up.error) throw new Error(up.error.message);
-  const pub = admin.storage.from(bucket).getPublicUrl(path);
+  const mime = file.type || "";
+  if (!mime.startsWith("image/")) {
+    throw new Error("Only image uploads are allowed for site assets");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const cloudinary = getCloudinary();
+
+  const uploadResult = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "meetadoc/site",
+        resource_type: "image",
+        public_id: `${target}-${Date.now()}`,
+        overwrite: true,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+
+  const publicUrl = uploadResult.secure_url;
   await ensure();
   try {
     await db.siteSettings.update({
       where: { id: "singleton" },
-      data: { [target]: pub.data.publicUrl },
+      data: { [target]: publicUrl },
     });
   } catch (e) {
     throw new Error("Site settings table not found. Please run database migration.");
   }
   revalidatePath("/", "layout");
-  return { success: true, url: pub.data.publicUrl };
+  return { success: true, url: publicUrl };
 }
