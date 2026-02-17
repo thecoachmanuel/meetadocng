@@ -14,7 +14,7 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
 
   const startPayment = async (plan) => {
     if (!userId || !userEmail) {
-      toast.error("Sign in to purchase credits");
+      toast.error("Sign in as a patient to purchase credits");
       return;
     }
     if (!paystackKey || !window.PaystackPop) {

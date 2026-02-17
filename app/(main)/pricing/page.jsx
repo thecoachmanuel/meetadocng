@@ -7,6 +7,7 @@ import { getSettings } from "@/lib/settings";
 
 export default async function PricingPage() {
   const [user, settings] = await Promise.all([checkUser(), getSettings()]);
+  const isPatient = user?.role === "PATIENT";
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -41,8 +42,8 @@ export default async function PricingPage() {
 
       {/* Pricing Section */}
       <Pricing
-        userEmail={user?.email}
-        userId={user?.id}
+        userEmail={isPatient ? user?.email : null}
+        userId={isPatient ? user?.id : null}
         rate={settings.creditToNairaRate}
         freeCredits={settings.freeCredits}
         standardCredits={settings.standardCredits}

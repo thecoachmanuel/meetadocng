@@ -3,6 +3,10 @@
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
 
+function hasSupportStore() {
+  return !!db.supportMessage?.findMany;
+}
+
 async function getCurrentUser() {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
@@ -38,6 +42,9 @@ export async function getSupportOverview() {
   const isAdmin = user.role === "ADMIN";
 
   if (!isAdmin) {
+    if (!hasSupportStore()) {
+      return { currentUser: user, isAdmin, conversations: [], messages: [], activeUserId: null };
+    }
     const admin = await getPrimaryAdmin();
     if (!admin) {
       return { currentUser: user, isAdmin, conversations: [], messages: [] };
@@ -64,6 +71,10 @@ export async function getSupportOverview() {
       messages,
       activeUserId: admin.id,
     };
+  }
+
+  if (!hasSupportStore()) {
+    return { currentUser: user, isAdmin, conversations: [], messages: [], activeUserId: null };
   }
 
   const rows = await db.supportMessage.findMany({
@@ -129,6 +140,9 @@ export async function getSupportMessagesForUserId(targetUserId, currentUserIdOve
   const isAdmin = current.role === "ADMIN";
 
   if (!isAdmin) {
+    if (!hasSupportStore()) {
+      return [];
+    }
     const admin = await getPrimaryAdmin();
     if (!admin) return [];
 
@@ -151,6 +165,10 @@ export async function getSupportMessagesForUserId(targetUserId, currentUserIdOve
 
   if (!targetUserId) return [];
 
+  if (!hasSupportStore()) {
+    return [];
+  }
+
   const messages = await db.supportMessage.findMany({
     where: {
       OR: [
@@ -172,6 +190,10 @@ export async function sendSupportMessage(formData) {
   const user = await getCurrentUser();
   if (!user) {
     throw new Error("You must be signed in to send a message");
+  }
+
+  if (!hasSupportStore()) {
+    throw new Error("Support messaging is not available yet");
   }
 
   const rawBody = formData.get("body");
@@ -212,4 +234,3 @@ export async function sendSupportMessage(formData) {
 
   return { success: true, message };
 }
-
