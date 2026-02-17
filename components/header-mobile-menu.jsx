@@ -92,9 +92,9 @@ export function HeaderMobileMenu({ user, notifications, doctorAvailableCredits }
 								/>
 							</div>
 						)}
-					</div>
-				</div>
+                </div>
+              </div>
+            </div>
 		</div>
 	);
 }
-
