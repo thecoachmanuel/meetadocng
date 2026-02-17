@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Header from "@/components/header";
+import FloatingLiveChat from "@/components/floating-live-chat";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSettings } from "@/lib/settings";
 
@@ -33,6 +34,10 @@ export default async function RootLayout({ children }) {
         >
           <Header />
           <main className="flex-1">{children}</main>
+          <FloatingLiveChat supportData={await (async () => {
+            const { getSupportOverview } = await import("@/actions/support-chat");
+            return getSupportOverview();
+          })()} />
           <Toaster richColors />
 
           <footer className="bg-muted/50 py-12">

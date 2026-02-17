@@ -1,13 +1,6 @@
 import React from "react";
 import { Button } from "./ui/button";
-import {
-  Calendar,
-  CreditCard,
-  ShieldCheck,
-  Stethoscope,
-  User,
-  MessageCircle,
-} from "lucide-react";
+import { Calendar, CreditCard, ShieldCheck, Stethoscope, User } from "lucide-react";
 import Link from "next/link";
 import SignOutButton from "./sign-out-button";
 import { checkUser } from "@/lib/checkUser";
@@ -55,27 +48,12 @@ export default async function Header() {
           />
         </Link>
 
-        {/* Action Buttons */}
         <div className="flex items-center space-x-2">
           {user && (
             <NotificationsBell
               initialItems={notifications.items}
               initialUnreadCount={notifications.unreadCount}
             />
-          )}
-          {user && (
-            <Link href="/support">
-              <Button
-                variant="ghost"
-                className="hidden md:inline-flex items-center gap-2 w-auto h-10 px-3"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Support
-              </Button>
-              <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-                <MessageCircle className="h-4 w-4" />
-              </Button>
-            </Link>
           )}
           {user && (
             <>
