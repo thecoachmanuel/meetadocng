@@ -2,70 +2,44 @@
 
 import React from "react";
 import { Card, CardContent } from "./ui/card";
-import Script from "next/script";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCredits = 10, premiumCredits = 50 }) => {
-	const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 	const router = useRouter();
-	const [paystackReady, setPaystackReady] = React.useState(false);
-
 	const isAuthenticatedPatient = Boolean(userId && userEmail);
-	const paystackConfigured = Boolean(paystackKey);
-	const canPurchase = isAuthenticatedPatient && paystackConfigured && paystackReady;
+	const canPurchase = isAuthenticatedPatient;
 
 	const startPayment = async (plan) => {
 		if (!userId || !userEmail) {
-			toast.error("Sign in to purchase credits");
+			toast.error("Sign in as a patient to purchase credits");
 			return;
 		}
-		if (!paystackKey || !window.PaystackPop) {
-			toast.error("Payment system not available");
-			return;
+		const amountInKobo = Math.round(plan.price * 100);
+		try {
+			toast.info("Redirecting to secure Paystack checkout...");
+			const res = await fetch("/api/paystack/init", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					email: userEmail,
+					userId,
+					plan: plan.id,
+					amount: amountInKobo,
+				}),
+			});
+			const data = await res.json().catch(() => null);
+			if (!res.ok || !data?.authorizationUrl) {
+				toast.error(data?.error || "Unable to start payment, please contact support.");
+				return;
+			}
+			window.location.href = data.authorizationUrl;
+		} catch (error) {
+			toast.error("Could not connect to payment service.");
 		}
-
-    const handler = window.PaystackPop.setup({
-      key: paystackKey,
-      email: userEmail,
-      amount: plan.price * 100,
-      currency: "NGN",
-      metadata: {
-        userId,
-        plan: plan.id,
-      },
-      callback: async (response) => {
-        if (!response?.reference) {
-          toast.error("Payment reference missing, please contact support.");
-          return;
-        }
-        toast.info("Verifying payment...");
-        try {
-          const res = await fetch("/api/paystack/verify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ reference: response.reference }),
-          });
-          const data = await res.json().catch(() => null);
-          if (!res.ok || !data?.success) {
-            toast.error(data?.error || "Unable to verify payment. Please contact support.");
-            return;
-          }
-          toast.success("Payment verified. Credits added to your account.");
-          router.refresh();
-        } catch (error) {
-          toast.error("An error occurred while verifying payment.");
-        }
-      },
-      onClose: () => {
-        toast.info("Payment window closed");
-      },
-    });
-
-    handler.openIframe();
   };
 
   const plans = [
@@ -76,11 +50,7 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
 
 	return (
 		<>
-			<Script
-				src="https://js.paystack.co/v1/inline.js"
-				onLoad={() => setPaystackReady(true)}
-			/>
-      <Card className="border-emerald-900/30 shadow-lg bg-linear-to-b from-emerald-950/30 to-transparent">
+	      <Card className="border-emerald-900/30 shadow-lg bg-linear-to-b from-emerald-950/30 to-transparent">
         <CardContent className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((plan) => (
@@ -101,13 +71,11 @@ const Pricing = ({ userEmail, userId, rate = 1000, freeCredits = 2, standardCred
 										>
 											Buy Credits
 										</Button>
-										{!canPurchase && (
+					{!canPurchase && (
 											<p className="mt-2 text-xs text-muted-foreground">
 												{!isAuthenticatedPatient
 														? "Sign in as a patient to purchase credits."
-														: !paystackConfigured
-														? "Payments are not available. Contact support."
-														: "Preparing payment, please wait."}
+									: "Payments are not available. Contact support."}
 											</p>
 										)}
 									</>

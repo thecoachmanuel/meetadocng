@@ -6,7 +6,8 @@ import { checkUser } from "@/lib/checkUser";
 import { getSettings } from "@/lib/settings";
 
 export default async function PricingPage() {
-	const [user, settings] = await Promise.all([checkUser(), getSettings()]);
+  const [user, settings] = await Promise.all([checkUser(), getSettings()]);
+  const isPatient = user?.role === "PATIENT";
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -39,15 +40,15 @@ export default async function PricingPage() {
         </p>
       </div>
 
-			{/* Pricing Section */}
-			<Pricing
-				userEmail={user?.email || null}
-				userId={user?.id || null}
-				rate={settings.creditToNairaRate}
-				freeCredits={settings.freeCredits}
-				standardCredits={settings.standardCredits}
-				premiumCredits={settings.premiumCredits}
-			/>
+      {/* Pricing Section */}
+      <Pricing
+        userEmail={isPatient ? user?.email : null}
+        userId={isPatient ? user?.id : null}
+        rate={settings.creditToNairaRate}
+        freeCredits={settings.freeCredits}
+        standardCredits={settings.standardCredits}
+        premiumCredits={settings.premiumCredits}
+      />
 
       {/* FAQ Section - Optional */}
       <div className="max-w-3xl mx-auto mt-16 text-center">

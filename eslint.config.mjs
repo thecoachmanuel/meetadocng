@@ -13,7 +13,7 @@ const eslintConfig = [
 	{
 		ignores: [".next/**", "prev_page.js"],
 	},
-	...compat.config({ extends: ["next/core-web-vitals"] }),
+	...compat.config({ extends: ["next", "next/core-web-vitals"] }),
 	{
 		rules: {
 			"react-hooks/set-state-in-effect": "off",
