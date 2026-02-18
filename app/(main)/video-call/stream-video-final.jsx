@@ -87,11 +87,6 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
     }
   }, [callingState, hasLeft, onLeave, recordDuration]);
 
-  const videoContainerRef = useRef(null);
-  const isPipDraggingRef = useRef(false);
-  const [pipPosition, setPipPosition] = useState({ top: 82, left: 85 });
-  const [isPipHidden, setIsPipHidden] = useState(false);
-
   const toggleVideo = async () => {
     if (call) {
       try {
@@ -131,55 +126,6 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
         onLeave();
       }
     }
-  };
-
-  const handlePiPPointerDown = (event) => {
-    if (!videoContainerRef.current) return;
-
-    isPipDraggingRef.current = false;
-
-    const containerRect = videoContainerRef.current.getBoundingClientRect();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const startTop = pipPosition.top;
-    const startLeft = pipPosition.left;
-
-    const handleMove = (moveEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      const deltaY = moveEvent.clientY - startY;
-
-      if (!isPipDraggingRef.current) {
-        const movedDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (movedDistance > 6) {
-          isPipDraggingRef.current = true;
-        }
-      }
-
-      const deltaXPercent = (deltaX / containerRect.width) * 100;
-      const deltaYPercent = (deltaY / containerRect.height) * 100;
-
-      let nextLeft = startLeft + deltaXPercent;
-      let nextTop = startTop + deltaYPercent;
-
-      if (nextLeft < 8) nextLeft = 8;
-      if (nextLeft > 92) nextLeft = 92;
-      if (nextTop < 8) nextTop = 8;
-      if (nextTop > 92) nextTop = 92;
-
-      setPipPosition({ top: nextTop, left: nextLeft });
-    };
-
-    const handleUp = () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-
-      if (!isPipDraggingRef.current) {
-        setIsPipHidden((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
   };
 
   if (isConnecting) {
@@ -222,110 +168,86 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
         )}
       </div>
       
-      <div className="flex-1 rounded-lg overflow-hidden border border-emerald-900/20 bg-black">
-        <div ref={videoContainerRef} className="relative w-full h-full">
-          {remoteParticipants.length > 0 ? (
-            <div className="absolute inset-0">
-              <div className="h-full w-full p-2">
-                <div className="call-video-frame w-full h-full bg-black rounded-lg">
-                  {remoteParticipants.length === 1 ? (
-                    <ParticipantView participant={remoteParticipants[0]} />
-                  ) : (
-                    <div className="grid h-full w-full gap-2">
-                      {remoteParticipants.map((participant) => (
-                        <div key={participant.userId} className="call-video-frame bg-black rounded-lg">
-                          <ParticipantView participant={participant} />
-                        </div>
-                      ))}
+      <div className="flex-1 rounded-lg overflow-hidden border border-emerald-900/20 bg-gray-900">
+        <div className="h-full flex flex-col lg:flex-row">
+          {/* Remote Participants (Main View) */}
+          <div className="flex-1 relative bg-gray-800">
+            {remoteParticipants.length > 0 ? (
+              <div className="h-full grid gap-2 p-2">
+                {remoteParticipants.map((participant) => (
+                  <div key={participant.userId} className="relative h-full">
+                    <div className="call-video-frame w-full h-full bg-black rounded-lg">
+                      <ParticipantView participant={participant} />
                     </div>
-                  )}
+                    <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
+                      <p className="text-white text-xs">{participant.name || 'Participant'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-emerald-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-medium">Waiting for participant...</p>
+                  <p className="text-gray-400 text-sm mt-2">Remote video will appear here</p>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-              <div className="text-center">
-                <div className="w-24 h-24 bg-emerald-600 rounded-full flex items-center justify-center mb-4 mx-auto">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <p className="text-white font-medium">Waiting for participant...</p>
-                <p className="text-gray-400 text-sm mt-2">Remote video will appear here</p>
-              </div>
-            </div>
-          )}
-
-          {localParticipant && (
-            <div
-              className="absolute cursor-move touch-none"
-              style={{
-                top: `${pipPosition.top}%`,
-                left: `${pipPosition.left}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-              onPointerDown={handlePiPPointerDown}
-            >
-              {isPipHidden ? (
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/60 border border-gray-600 flex items-center justify-center shadow-md">
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-              ) : (
+            )}
+          </div>
+          
+          {/* Local Participant (Picture-in-Picture) */}
+          <div className="lg:w-80 lg:border-l border-emerald-900/20 p-4 bg-gray-900">
+            <div className="relative">
+              {localParticipant && (
                 <>
-                  <div className="call-video-frame w-28 h-40 sm:w-32 sm:h-48 md:w-40 md:h-60 bg-black rounded-lg border border-gray-700 shadow-lg">
+                  <div className="call-video-frame w-full h-48 bg-black rounded-lg border border-gray-700">
                     <ParticipantView participant={localParticipant} />
                   </div>
-                  <div className="absolute bottom-2 left-2 bg-black/60 rounded px-2 py-1">
-                    <p className="text-white text-[10px] sm:text-xs">You</p>
+                  <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
+                    <p className="text-white text-xs">You</p>
                   </div>
                 </>
               )}
+              
+              {/* Video Controls */}
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={toggleVideo}
+                  className={`p-2 rounded-full ${isVideoMuted ? 'bg-red-600' : 'bg-gray-800'} text-white hover:opacity-80 transition-opacity`}
+                  title={isVideoMuted ? 'Turn on camera' : 'Turn off camera'}
+                >
+                  {isVideoMuted ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={toggleAudio}
+                  className={`p-2 rounded-full ${isAudioMuted ? 'bg-red-600' : 'bg-gray-800'} text-white hover:opacity-80 transition-opacity`}
+                  title={isAudioMuted ? 'Turn on microphone' : 'Turn off microphone'}
+                >
+                  {isAudioMuted ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
-          )}
-
-          <div className="absolute top-3 right-3 flex gap-2 z-10">
-            <button
-              onClick={toggleVideo}
-              className={`p-2 rounded-full ${isVideoMuted ? "bg-red-600" : "bg-gray-900/80"} text-white hover:opacity-80 transition-opacity`}
-              title={isVideoMuted ? "Turn on camera" : "Turn off camera"}
-            >
-              {isVideoMuted ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              )}
-            </button>
-            <button
-              onClick={toggleAudio}
-              className={`p-2 rounded-full ${isAudioMuted ? "bg-red-600" : "bg-gray-900/80"} text-white hover:opacity-80 transition-opacity`}
-              title={isAudioMuted ? "Turn on microphone" : "Turn off microphone"}
-            >
-              {isAudioMuted ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V6a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              )}
-            </button>
           </div>
         </div>
       </div>
