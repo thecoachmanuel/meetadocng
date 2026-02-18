@@ -128,3 +128,16 @@
 @utility gradient-title {
   @apply gradient font-bold text-transparent bg-clip-text pb-1 pr-2;
 }
+
+.call-video-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.call-video-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
+}
