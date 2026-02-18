@@ -29,6 +29,7 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [hasLeft, setHasLeft] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const callStartRef = useRef(null);
   const hasRecordedRef = useRef(false);
 
@@ -39,6 +40,23 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
       callStartRef.current = Date.now();
     }
   }, [callingState]);
+
+  useEffect(() => {
+    let interval;
+    if (callingState === CallingState.JOINED && !hasLeft) {
+      interval = setInterval(() => {
+        if (callStartRef.current) {
+          const ms = Date.now() - callStartRef.current;
+          setElapsedSeconds(Math.floor(ms / 1000));
+        }
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [callingState, hasLeft]);
 
   const recordDuration = useCallback(async () => {
     if (!appointmentId || hasRecordedRef.current || !callStartRef.current) return;
@@ -124,6 +142,12 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
     );
   }
 
+  const minutes = Math.floor(elapsedSeconds / 60);
+  const seconds = elapsedSeconds % 60;
+  const formattedTime = `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
+
   return (
     <div className="container mx-auto px-4 py-8 h-screen flex flex-col">
       <div className="text-center mb-6">
@@ -135,6 +159,13 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
             {remoteParticipants.length + 1} Participants
           </span>
         </div>
+        {elapsedSeconds > 0 && (
+          <div className="mt-2 flex justify-center">
+            <span className="bg-black/40 text-emerald-100 px-2 py-1 rounded text-xs font-mono">
+              Call time: {formattedTime}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="flex-1 rounded-lg overflow-hidden border border-emerald-900/20 bg-gray-900">

@@ -42,6 +42,7 @@ export function EscrowAppointments({ appointments }) {
   const [localAppointments, setLocalAppointments] = useState(appointments || []);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [doctorFilter, setDoctorFilter] = useState("");
+  const [durationFilter, setDurationFilter] = useState("ALL");
   const [actionNote, setActionNote] = useState("");
 
   const {
@@ -131,8 +132,22 @@ export function EscrowAppointments({ appointments }) {
       const filterText = doctorFilter.trim().toLowerCase();
       const matchesDoctor =
         filterText.length === 0 || doctorText.includes(filterText);
+      const duration =
+        typeof appointment.callDuration === "number"
+          ? appointment.callDuration
+          : null;
+      const matchesDuration =
+        durationFilter === "ALL"
+          ? true
+          : durationFilter === "RECORDED"
+          ? duration !== null && duration > 0
+          : durationFilter === "SHORT"
+          ? duration !== null && duration > 0 && duration < 5
+          : durationFilter === "MEDIUM"
+          ? duration !== null && duration >= 5 && duration < 20
+          : duration !== null && duration >= 20;
 
-      return matchesStatus && matchesDoctor;
+      return matchesStatus && matchesDoctor && matchesDuration;
     });
 
     return list.sort((a, b) => {
@@ -184,6 +199,22 @@ export function EscrowAppointments({ appointments }) {
                   <option value="CANCELLED">Cancelled</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">
+                  Call duration
+                </label>
+                <select
+                  value={durationFilter}
+                  onChange={(e) => setDurationFilter(e.target.value)}
+                  className="rounded-md border border-emerald-900/30 bg-background px-2 py-1 text-sm text-white"
+                >
+                  <option value="ALL">All</option>
+                  <option value="RECORDED">Recorded only</option>
+                  <option value="SHORT">Short (&lt; 5 min)</option>
+                  <option value="MEDIUM">Medium (5–19 min)</option>
+                  <option value="LONG">Long (20+ min)</option>
+                </select>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -201,6 +232,12 @@ export function EscrowAppointments({ appointments }) {
               )}
               {filteredAppointments.map((appointment) => {
                 const isPast = new Date(appointment.startTime) < new Date();
+                const durationMinutes =
+                  typeof appointment.callDuration === "number"
+                    ? appointment.callDuration
+                    : null;
+                const isVeryShortCall =
+                  durationMinutes !== null && durationMinutes > 0 && durationMinutes < 5;
                 const badgeVariant =
                   appointment.status === "COMPLETED"
                     ? "bg-emerald-900/20 border-emerald-900/30 text-emerald-400"
@@ -211,7 +248,11 @@ export function EscrowAppointments({ appointments }) {
                 return (
                   <Card
                     key={appointment.id}
-                    className="bg-background border-emerald-900/20 hover:border-emerald-700/30 transition-all"
+                    className={`bg-background hover:border-emerald-700/30 transition-all border ${
+                      isVeryShortCall
+                        ? "border-amber-500/60 shadow-[0_0_0_1px_rgba(245,158,11,0.4)]"
+                        : "border-emerald-900/20"
+                    }`}
                   >
                     <CardContent className="p-4">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
