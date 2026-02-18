@@ -17,7 +17,7 @@ export default function Page() {
   const signInEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabaseClient.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -28,9 +28,14 @@ export default function Page() {
     }
     toast.success("Signed in successfully. Redirecting to your dashboard...");
     try {
-      const res = await fetch("/api/me", { method: "POST" });
-      const data = await res.json();
-      const role = data?.user?.role || "UNASSIGNED";
+      const accessToken = data?.session?.access_token;
+      const headers = {};
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+      const res = await fetch("/api/me", { method: "POST", headers });
+      const body = await res.json();
+      const role = body?.user?.role || "UNASSIGNED";
       const redirectMap = {
         ADMIN: "/admin",
         DOCTOR: "/doctor",
