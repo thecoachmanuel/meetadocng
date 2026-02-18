@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import useFetch from "@/hooks/use-fetch";
+import { recordAppointmentCallDuration } from "@/actions/appointments";
 
-// Import Stream.io React SDK
 import {
 	StreamVideo,
 	StreamVideoClient,
@@ -16,8 +17,7 @@ import {
 	CallingState
 } from "@stream-io/video-react-sdk";
 
-// Custom hook for Stream.io video calling
-function VideoCallUI({ userId, userName, callId, onLeave }) {
+function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
   const call = useCall();
   const { useCallCallingState, useLocalParticipant, useRemoteParticipants } = useCallStateHooks();
   
@@ -29,6 +29,29 @@ function VideoCallUI({ userId, userName, callId, onLeave }) {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [hasLeft, setHasLeft] = useState(false);
+  const callStartRef = useRef(null);
+  const hasRecordedRef = useRef(false);
+
+  const { fn: submitCallDuration } = useFetch(recordAppointmentCallDuration);
+
+  useEffect(() => {
+    if (callingState === CallingState.JOINED && !callStartRef.current) {
+      callStartRef.current = Date.now();
+    }
+  }, [callingState]);
+
+  const recordDuration = useCallback(async () => {
+    if (!appointmentId || hasRecordedRef.current || !callStartRef.current) return;
+    hasRecordedRef.current = true;
+    const ms = Date.now() - callStartRef.current;
+    const minutes = Math.max(1, Math.round(ms / 60000));
+    const fd = new FormData();
+    fd.append("appointmentId", appointmentId);
+    fd.append("durationMinutes", String(minutes));
+    try {
+      await submitCallDuration(fd);
+    } catch {}
+  }, [appointmentId, submitCallDuration]);
 
   useEffect(() => {
     if (callingState === CallingState.JOINED) {
@@ -39,11 +62,12 @@ function VideoCallUI({ userId, userName, callId, onLeave }) {
     } else if (callingState === CallingState.LEFT && !hasLeft) {
       setHasLeft(true);
       toast.info("Left the video consultation");
+      recordDuration();
       if (onLeave) {
         onLeave();
       }
     }
-  }, [callingState, hasLeft, onLeave]);
+  }, [callingState, hasLeft, onLeave, recordDuration]);
 
   const toggleVideo = async () => {
     if (call) {
@@ -79,6 +103,7 @@ function VideoCallUI({ userId, userName, callId, onLeave }) {
     } catch (error) {
       console.error("Failed to leave call:", error);
     } finally {
+      recordDuration();
       if (onLeave) {
         onLeave();
       }
@@ -211,8 +236,7 @@ function VideoCallUI({ userId, userName, callId, onLeave }) {
   );
 }
 
-// Main component that wraps everything with Stream.io providers
-export default function StreamVideoFinal({ callId, userId, userName, apiKey, token }) {
+export default function StreamVideoFinal({ callId, appointmentId, userId, userName, apiKey, token }) {
   const router = useRouter();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
@@ -308,15 +332,16 @@ export default function StreamVideoFinal({ callId, userId, userName, apiKey, tok
   }
 
   return (
-    <StreamVideo client={client}>
-      <StreamCall call={call}>
-        <VideoCallUI 
-          callId={callId} 
-          userId={userId} 
-          userName={userName}
-          onLeave={handleLeaveCall}
-        />
-      </StreamCall>
-    </StreamVideo>
+		<StreamVideo client={client}>
+		  <StreamCall call={call}>
+		    <VideoCallUI 
+		      callId={callId}
+		      appointmentId={appointmentId}
+		      userId={userId}
+		      userName={userName}
+		      onLeave={handleLeaveCall}
+		    />
+		  </StreamCall>
+		</StreamVideo>
   );
 }

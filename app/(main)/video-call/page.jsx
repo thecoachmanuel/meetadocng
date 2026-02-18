@@ -5,6 +5,7 @@ import { STREAM_CONFIG } from "@/lib/stream-config";
 export default async function VideoCallPage({ searchParams }) {
   const params = await searchParams;
   const sessionId = params?.sessionId || params?.appointmentId;
+  const appointmentId = params?.appointmentId || params?.sessionId;
   const error = params?.error;
   
   const user = await checkUser();
@@ -36,6 +37,7 @@ export default async function VideoCallPage({ searchParams }) {
   return (
 		<StreamVideoFinal
 			callId={sessionId}
+			appointmentId={appointmentId}
 			userId={user.id}
 			userName={user.name || user.email?.split("@")[0] || "User"}
 			apiKey={STREAM_CONFIG.getApiKey()}

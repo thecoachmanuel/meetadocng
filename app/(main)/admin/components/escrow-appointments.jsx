@@ -267,6 +267,11 @@ export function EscrowAppointments({ appointments }) {
                                 </span>
                               </div>
                             </div>
+                            <div className="text-xs text-emerald-300 pt-1">
+                              {typeof appointment.callDuration === "number" && appointment.callDuration > 0
+                                ? `Call duration recorded: ${appointment.callDuration} min`
+                                : "Call duration not recorded yet"}
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 self-end lg:self-center">
@@ -358,6 +363,15 @@ export function EscrowAppointments({ appointments }) {
                     new Date(selectedAppointment.startTime),
                     "MMM d, yyyy 'at' h:mm a"
                   )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Call duration</span>
+                <span className="text-white">
+                  {typeof selectedAppointment.callDuration === "number" &&
+                  selectedAppointment.callDuration > 0
+                    ? `${selectedAppointment.callDuration} min`
+                    : "Not recorded"}
                 </span>
               </div>
               <div className="space-y-1 pt-2">

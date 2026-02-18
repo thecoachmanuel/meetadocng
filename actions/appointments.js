@@ -273,6 +273,58 @@ export async function generateVideoToken(formData) {
   }
 }
 
+export async function recordAppointmentCallDuration(formData) {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.auth.getUser();
+  const authUser = data?.user;
+
+  if (error || !authUser) {
+    throw new Error("Unauthorized");
+  }
+
+  const appointmentId = formData.get("appointmentId");
+  const rawDuration = formData.get("durationMinutes");
+  const durationMinutes =
+    typeof rawDuration === "string" ? parseInt(rawDuration, 10) : NaN;
+
+  if (!appointmentId || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    throw new Error("Invalid call duration payload");
+  }
+
+  const user = await db.user.findUnique({
+    where: {
+      supabaseUserId: authUser.id,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const appointment = await db.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!appointment) {
+    throw new Error("Appointment not found");
+  }
+
+  if (appointment.doctorId !== user.id && appointment.patientId !== user.id) {
+    throw new Error("You are not authorized to update this appointment");
+  }
+
+  const existing =
+    typeof appointment.callDuration === "number" ? appointment.callDuration : 0;
+  const nextDuration = durationMinutes > existing ? durationMinutes : existing;
+
+  await db.appointment.update({
+    where: { id: appointmentId },
+    data: { callDuration: nextDuration },
+  });
+
+  return { success: true, callDuration: nextDuration };
+}
+
 /**
  * Get doctor by ID
  */
