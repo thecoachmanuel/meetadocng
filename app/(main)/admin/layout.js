@@ -1,4 +1,4 @@
-import { verifyAdmin } from "@/actions/admin";
+import { getAdminProfile } from "@/actions/admin";
 import { redirect } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, AlertCircle, Users, CreditCard, Layout } from "lucide-react";
@@ -36,6 +36,11 @@ const adminTabs = [
     icon: Users,
   },
   {
+    value: "roles",
+    label: "Admin Roles",
+    icon: ShieldCheck,
+  },
+  {
     value: "leaderboards",
     label: "Leaderboards",
     icon: Layout,
@@ -48,24 +53,33 @@ const adminTabs = [
 ];
 
 export default async function AdminLayout({ children }) {
-  // Verify the user has admin access
-  const isAdmin = await verifyAdmin();
+  const profile = await getAdminProfile();
 
-  // Redirect if not an admin
-  if (!isAdmin) {
+  if (!profile.isAdmin) {
     redirect("/onboarding");
   }
+
+  const tabsForRole = adminTabs.filter((tab) =>
+    profile.isMainAdmin ? true : tab.value !== "roles",
+  );
+
+  const allowedTabs =
+    profile.isMainAdmin || !profile.allowedSections.length
+      ? tabsForRole
+      : tabsForRole.filter((tab) => profile.allowedSections.includes(tab.value));
+
+  const defaultTab = allowedTabs[0]?.value || tabsForRole[0].value;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <PageHeader icon={<ShieldCheck />} title="Admin Settings" />
 
       <Tabs
-        defaultValue="pending"
+        defaultValue={defaultTab}
         className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start"
       >
         <TabsList className="md:col-span-1 bg-muted/30 border h-auto flex flex-row md:flex-col w-full max-w-full p-2 md:p-1 rounded-xl md:space-y-2 space-x-2 md:space-x-0 overflow-x-auto whitespace-nowrap md:whitespace-normal scroll-smooth">
-          {adminTabs.map((tab) => {
+          {allowedTabs.map((tab) => {
             const Icon = tab.icon;
 
             return (

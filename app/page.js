@@ -21,20 +21,27 @@ export default async function Home() {
 	};
 	const dashboardHref = role ? redirectMap[role] || "/" : null;
 	const authCtaHref = dashboardHref || "/sign-up";
-  const hs = s.homepageSections || {};
-  const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
-  const hero = {
-    badge: "Healthcare, made easy",
-    titleLine1: "Your doctor is just a tap away",
-    titleHighlightLine2: "trusted care, anytime",
-    description:
-      "MeetADoc connects you to licensed doctors for secure video consultations, prescriptions, and follow-up care — all from the comfort of your home.",
-    primaryCtaText: "Get Started",
-    primaryCtaLink: authCtaHref,
-    secondaryCtaText: "Find Doctors",
-    secondaryCtaLink: "/doctors",
-  };
-  const cta = hs.cta || {
+	const hs = s.homepageSections || {};
+	const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
+	const heroFromSettings = hs.hero || {};
+	const heroDefaults = {
+		badge: "Healthcare, made easy",
+		titleLine1: "Your doctor is just a tap away",
+		titleHighlightLine2: "trusted care, anytime",
+		description:
+			"MeetADoc connects you to licensed doctors for secure video consultations, prescriptions, and follow-up care — all from the comfort of your home.",
+		primaryCtaText: "Get Started",
+		primaryCtaLink: authCtaHref,
+		secondaryCtaText: "Find Doctors",
+		secondaryCtaLink: "/doctors",
+	};
+	const hero = {
+		...heroDefaults,
+		...heroFromSettings,
+		primaryCtaLink: heroFromSettings.primaryCtaLink || heroDefaults.primaryCtaLink,
+		secondaryCtaLink: heroFromSettings.secondaryCtaLink || heroDefaults.secondaryCtaLink,
+	};
+	const cta = hs.cta || {
     title: "Ready to take control of your healthcare?",
     description:
       "Join thousands of users who have simplified their healthcare journey with our platform. Get started today and experience healthcare the way it should be.",

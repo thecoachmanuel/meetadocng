@@ -8,8 +8,9 @@ import { EnquiriesPanel } from "./components/enquiries";
 import { Leaderboards } from "./components/leaderboards";
 import { EscrowAppointments } from "./components/escrow-appointments";
 import PaymentsPanel from "./components/payments-panel";
+import AdminRolesPanel from "./components/admin-roles";
 import { getSiteSettings } from "@/actions/site-settings";
-import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements, getProcessedPayouts, getPayments } from "@/actions/admin";
+import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements, getProcessedPayouts, getPayments, getAdminUsers } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
 import SiteSettingsPanel from "./settings-panel";
 import CreditsConfig from "./credits-config";
@@ -34,6 +35,7 @@ import {
 		getAnnouncements(),
 		getProcessedPayouts(),
 		getPayments(),
+		getAdminUsers(),
 	  ]);
 
   const pendingDoctorsData =
@@ -84,6 +86,10 @@ import {
 		results[11].status === "fulfilled" && results[11].value
 		  ? results[11].value
 		  : { payments: [] };
+	  const adminUsersData =
+		results[12].status === "fulfilled" && results[12].value
+		  ? results[12].value
+		  : { admins: [] };
 
   return (
     <>
@@ -116,6 +122,10 @@ import {
 
 		  <TabsContent value="payments" className="border-none p-0">
 			<PaymentsPanel payments={paymentsData.payments || []} />
+		  </TabsContent>
+
+		  <TabsContent value="roles" className="border-none p-0">
+			<AdminRolesPanel admins={adminUsersData.admins || []} />
 		  </TabsContent>
 
       <TabsContent value="settings" className="border-none p-0">

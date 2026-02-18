@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -36,6 +37,101 @@ export async function verifyAdmin() {
     console.error("Failed to verify admin:", error);
     return false;
   }
+}
+
+export async function getAdminProfile() {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user) {
+    return {
+      isAdmin: false,
+      isMainAdmin: false,
+      allowedSections: [],
+      adminTitle: null,
+      email: null,
+      id: null,
+    };
+  }
+
+  const authUser = data.user;
+
+  try {
+    let dbUser = await db.user.findUnique({
+      where: {
+        supabaseUserId: authUser.id,
+      },
+    });
+
+    if (!dbUser) {
+      const email = authUser.email || authUser.identities?.[0]?.email || "";
+      if (email) {
+        dbUser = await db.user.findUnique({ where: { email: email.toLowerCase() } });
+      }
+    }
+
+    if (!dbUser || dbUser.role !== "ADMIN") {
+      return {
+        isAdmin: false,
+        isMainAdmin: false,
+        allowedSections: [],
+        adminTitle: null,
+        email: authUser.email || null,
+        id: null,
+      };
+    }
+
+    const mainAdminEmailEnv = process.env.MAIN_ADMIN_EMAIL;
+    const mainAdminEmail =
+      mainAdminEmailEnv && mainAdminEmailEnv.length > 0
+        ? mainAdminEmailEnv.toLowerCase()
+        : "meetadocng@gmail.com";
+    const userEmail = (dbUser.email || authUser.email || "").toLowerCase();
+    const isMainAdmin = userEmail === mainAdminEmail;
+
+    const rawSections = dbUser.adminSections;
+    const allowedSections =
+      Array.isArray(rawSections) && rawSections.length
+        ? rawSections.filter((s) => typeof s === "string")
+        : [];
+
+    return {
+      isAdmin: true,
+      isMainAdmin,
+      allowedSections,
+      adminTitle: dbUser.adminTitle || null,
+      email: dbUser.email,
+      id: dbUser.id,
+    };
+  } catch (error) {
+    console.error("Failed to get admin profile:", error);
+    return {
+      isAdmin: false,
+      isMainAdmin: false,
+      allowedSections: [],
+      adminTitle: null,
+      email: authUser.email || null,
+      id: null,
+    };
+  }
+}
+
+export async function requireAdminSection(section) {
+  const profile = await getAdminProfile();
+
+  if (!profile.isAdmin) {
+    throw new Error("Unauthorized");
+  }
+
+  if (profile.isMainAdmin) {
+    return profile;
+  }
+
+  if (!profile.allowedSections.length || !profile.allowedSections.includes(section)) {
+    throw new Error("You do not have permission to manage this section");
+  }
+
+  return profile;
 }
 
 /**
@@ -622,6 +718,164 @@ export async function adminCreateUser(formData) {
   revalidatePath("/admin");
 
   return { success: true };
+}
+
+export async function getAdminUsers() {
+  const profile = await getAdminProfile();
+
+  if (!profile.isAdmin || !profile.isMainAdmin) {
+    throw new Error("Unauthorized");
+  }
+
+  const mainAdminEmailEnv = process.env.MAIN_ADMIN_EMAIL;
+  const mainAdminEmail =
+    mainAdminEmailEnv && mainAdminEmailEnv.length > 0
+      ? mainAdminEmailEnv.toLowerCase()
+      : "meetadocng@gmail.com";
+
+  const admins = await db.user.findMany({
+    where: { role: "ADMIN" },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      adminTitle: true,
+      adminSections: true,
+      createdAt: true,
+    },
+  });
+
+  const formatted = admins.map((a) => {
+    const rawSections = a.adminSections;
+    const sections =
+      Array.isArray(rawSections) && rawSections.length
+        ? rawSections.filter((s) => typeof s === "string")
+        : [];
+
+    const email = (a.email || "").toLowerCase();
+
+    return {
+      id: a.id,
+      email: a.email,
+      name: a.name,
+      adminTitle: a.adminTitle,
+      adminSections: sections,
+      createdAt: a.createdAt,
+      isMainAdmin: email === mainAdminEmail,
+    };
+  });
+
+  return { admins: formatted };
+}
+
+export async function upsertAdminUser(formData) {
+  const profile = await getAdminProfile();
+
+  if (!profile.isAdmin || !profile.isMainAdmin) {
+    throw new Error("Unauthorized");
+  }
+
+  const rawId = formData.get("id");
+  const rawEmail = formData.get("email");
+  const rawName = formData.get("name");
+  const rawTitle = formData.get("title");
+  const rawPassword = formData.get("password");
+  const rawSections = formData.getAll("sections");
+
+  const id = typeof rawId === "string" && rawId.trim().length ? rawId.trim() : null;
+  const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+  const name = typeof rawName === "string" ? rawName.trim() : "";
+  const adminTitle = typeof rawTitle === "string" ? rawTitle.trim() : "";
+  const password = typeof rawPassword === "string" ? rawPassword.trim() : "";
+  const adminSections = rawSections
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter(Boolean);
+
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  if (!id && !password) {
+    throw new Error("Password is required for new admin users");
+  }
+
+  if (!adminSections.length) {
+    throw new Error("Select at least one section for this admin");
+  }
+
+  const client = supabaseAdmin();
+
+  const listRes = await client.auth.admin.listUsers({ page: 1, perPage: 200 });
+  if (listRes.error) {
+    throw new Error("Failed to check existing users in auth");
+  }
+
+  const existingAuth = listRes.data.users.find(
+    (u) => (u.email || "").toLowerCase() === email,
+  );
+
+  let supabaseUserId;
+
+  if (!existingAuth) {
+    const createRes = await client.auth.admin.createUser({
+      email,
+      password: password || undefined,
+      email_confirm: true,
+    });
+
+    if (createRes.error || !createRes.data?.user) {
+      throw new Error(createRes.error?.message || "Failed to create admin user");
+    }
+
+    supabaseUserId = createRes.data.user.id;
+  } else {
+    supabaseUserId = existingAuth.id;
+
+    if (password) {
+      const updateRes = await client.auth.admin.updateUserById(supabaseUserId, {
+        password,
+        email_confirm: true,
+      });
+
+      if (updateRes.error) {
+        throw new Error(updateRes.error.message || "Failed to update admin password");
+      }
+    }
+  }
+
+  const data = {
+    supabaseUserId,
+    email,
+    name: name || null,
+    role: "ADMIN",
+    adminTitle: adminTitle || null,
+    adminSections,
+  };
+
+  let admin;
+
+  if (id) {
+    admin = await db.user.update({
+      where: { id },
+      data,
+    });
+  } else {
+    const existingDb = await db.user.findUnique({ where: { email } });
+
+    if (existingDb) {
+      admin = await db.user.update({
+        where: { email },
+        data,
+      });
+    } else {
+      admin = await db.user.create({ data });
+    }
+  }
+
+  revalidatePath("/admin");
+
+  return { success: true, adminId: admin.id };
 }
 
 /**

@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { getCloudinary } from "@/lib/cloudinary";
+import { requireAdminSection } from "@/actions/admin";
 
 async function ensure() {
   // Intentionally no-op to avoid crashing when table doesn't exist
@@ -23,6 +24,8 @@ export async function updateSiteSettings(formData) {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) throw new Error("Unauthorized");
   const user = data.user;
+
+  await requireAdminSection("settings");
 
   const rawSettings = Object.fromEntries(formData.entries());
   const settings = { ...rawSettings };
