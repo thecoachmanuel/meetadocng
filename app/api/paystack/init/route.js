@@ -20,8 +20,6 @@ export async function POST(request) {
 			return NextResponse.json({ error: "Payment configuration missing" }, { status: 500 });
 		}
 
-		const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-
 		const initResponse = await fetch("https://api.paystack.co/transaction/initialize", {
 			method: "POST",
 			headers: {
@@ -33,7 +31,6 @@ export async function POST(request) {
 				email,
 				amount,
 				currency: "NGN",
-				callback_url: `${siteUrl}/paystack/callback`,
 				metadata: {
 					userId,
 					plan,

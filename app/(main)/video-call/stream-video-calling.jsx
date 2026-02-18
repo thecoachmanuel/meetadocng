@@ -39,9 +39,13 @@ function VideoCallUI({ userId, userName, callId }) {
     } else if (callingState === CallingState.JOINING) {
       setIsConnecting(true);
     } else if (callingState === CallingState.LEFT) {
+      if (call) {
+        call.camera.disable().catch(() => {});
+        call.microphone.disable().catch(() => {});
+      }
       toast.info("Left the video consultation");
     }
-  }, [callingState]);
+  }, [callingState, call]);
 
   const toggleVideo = async () => {
     if (call) {
@@ -72,6 +76,8 @@ function VideoCallUI({ userId, userName, callId }) {
   const leaveCall = async () => {
     if (call) {
       try {
+        await call.camera.disable().catch(() => {});
+        await call.microphone.disable().catch(() => {});
         await call.leave();
       } catch (error) {
         console.error("Failed to leave call:", error);
