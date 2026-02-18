@@ -2,13 +2,13 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
-export default function PaystackCallbackPage() {
+function PaystackCallbackInner() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [status, setStatus] = useState("verifying");
@@ -88,5 +88,29 @@ export default function PaystackCallbackPage() {
 				</CardContent>
 			</Card>
 		</div>
+	);
+}
+
+export default function PaystackCallbackPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="min-h-screen flex items-center justify-center px-4">
+					<Card className="max-w-md w-full border-emerald-900/30 bg-background">
+						<CardHeader className="text-center space-y-2">
+							<CardTitle className="text-xl font-bold text-white">Verifying Payment</CardTitle>
+							<CardDescription className="text-muted-foreground">
+								Verifying your payment...
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="flex flex-col items-center space-y-4">
+							<Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+						</CardContent>
+					</Card>
+				</div>
+			}
+		>
+			<PaystackCallbackInner />
+		</Suspense>
 	);
 }
