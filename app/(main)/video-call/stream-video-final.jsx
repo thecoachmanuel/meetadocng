@@ -25,12 +25,13 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
 	const localParticipant = useLocalParticipant();
 	const remoteParticipants = useRemoteParticipants();
 	const primaryRemote = remoteParticipants[0];
-  
-  const [isVideoMuted, setIsVideoMuted] = useState(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(true);
-  const [hasLeft, setHasLeft] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+	const [isVideoMuted, setIsVideoMuted] = useState(false);
+	const [isAudioMuted, setIsAudioMuted] = useState(false);
+	const [isConnecting, setIsConnecting] = useState(true);
+	const [hasLeft, setHasLeft] = useState(false);
+	const [elapsedSeconds, setElapsedSeconds] = useState(0);
+	const [isLandscape, setIsLandscape] = useState(false);
   const callStartRef = useRef(null);
   const hasRecordedRef = useRef(false);
 
@@ -41,6 +42,20 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
       callStartRef.current = Date.now();
     }
   }, [callingState]);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const updateOrientation = () => {
+			setIsLandscape(window.innerWidth > window.innerHeight);
+		};
+		updateOrientation();
+		window.addEventListener("resize", updateOrientation);
+		window.addEventListener("orientationchange", updateOrientation);
+		return () => {
+			window.removeEventListener("resize", updateOrientation);
+			window.removeEventListener("orientationchange", updateOrientation);
+		};
+	}, []);
 
   useEffect(() => {
     let interval;
@@ -149,8 +164,8 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
     .toString()
     .padStart(2, "0")}`;
 
-  return (
-    <div className="container mx-auto px-4 py-4 h-[calc(100vh-32px)] flex flex-col">
+	return (
+		<div className="w-full h-full flex flex-col">
       <div className="text-center mb-4">
         <h1 className="text-3xl font-bold text-white mb-2">Video Consultation</h1>
         <p className="text-muted-foreground">Powered by Stream.io Professional Video</p>
@@ -169,7 +184,7 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
         )}
       </div>
 
-      <div className="flex-1 rounded-2xl overflow-hidden border border-emerald-900/40 bg-black">
+			<div className="flex-1 rounded-2xl overflow-hidden border border-emerald-900/40 bg-black">
         <div className="relative w-full h-full">
           {primaryRemote ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -197,8 +212,14 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
             </div>
           )}
 
-          {localParticipant && (
-            <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-28 h-40 sm:w-32 sm:h-44 md:w-40 md:h-56 rounded-xl overflow-hidden border border-white/40 bg-black/70 shadow-lg">
+					{localParticipant && (
+						<div
+							className={`absolute ${
+								isLandscape
+									? "right-4 top-4"
+									: "right-3 bottom-3 sm:right-4 sm:bottom-4"
+							} w-28 h-40 sm:w-32 sm:h-44 md:w-40 md:h-56 rounded-xl overflow-hidden border border-white/40 bg-black/70 shadow-lg`}
+						>
               <ParticipantView
                 participant={localParticipant}
                 className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain [&_video]:object-center"
@@ -209,7 +230,13 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
             </div>
           )}
 
-          <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-3 sm:gap-4 px-4">
+					<div
+						className={
+							isLandscape
+								? "absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3"
+								: "absolute inset-x-0 bottom-4 flex items-center justify-center gap-3 sm:gap-4 px-4"
+						}
+					>
             <button
               onClick={toggleAudio}
               className={`p-3 rounded-full ${isAudioMuted ? "bg-red-600" : "bg-gray-900/80"} text-white hover:opacity-90 transition-opacity shadow-lg`}
