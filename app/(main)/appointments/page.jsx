@@ -8,7 +8,23 @@ import { getCurrentUser } from "@/actions/onboarding";
 
 export const dynamic = "force-dynamic";
 
-export default async function PatientAppointmentsPage() {
+export default async function PatientAppointmentsPage({ searchParams }) {
+	const referenceParam = searchParams?.reference || searchParams?.trxref;
+	if (referenceParam) {
+		const params = new URLSearchParams();
+		if (typeof searchParams.reference === "string") {
+			params.append("reference", searchParams.reference);
+		}
+		if (typeof searchParams.trxref === "string") {
+			params.append("trxref", searchParams.trxref);
+		}
+		if (typeof searchParams.status === "string") {
+			params.append("status", searchParams.status);
+		}
+		const query = params.toString();
+		redirect(`/paystack/callback${query ? `?${query}` : ""}`);
+	}
+
 	let user;
 	try {
 		user = await getCurrentUser();
