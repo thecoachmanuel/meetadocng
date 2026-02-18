@@ -45,7 +45,7 @@ export default function ContactPage() {
       <div className="mb-8 text-center space-y-3">
         <h1 className="text-3xl md:text-4xl font-semibold text-white">Contact us</h1>
         <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Have a question about your account, billing, or using MeetADoc? Send us a message and our team will get back to you.
+          Have a question about your account, billing, or using MeetADoc? Send us a message and our team will get back to you. You can also email us directly at <span className="font-medium text-emerald-300">meetadocng@gmail.com</span>.
         </p>
       </div>
       <Card className="bg-muted/20 border-emerald-900/20">
