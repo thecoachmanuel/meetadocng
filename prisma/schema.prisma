@@ -38,6 +38,7 @@ model User {
   doctorAppointments  Appointment[] @relation("DoctorAppointments")
   availabilities      Availability[]
   transactions        CreditTransaction[]
+  payments            Payment[]
   payouts             Payout[]
   contactMessages     ContactMessage[]
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
