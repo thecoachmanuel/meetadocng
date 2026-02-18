@@ -178,7 +178,7 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
                   <div key={participant.userId} className="relative h-full">
                     <ParticipantView
                       participant={participant}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full bg-black rounded-lg [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
                     />
                     <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
                       <p className="text-white text-xs">{participant.name || 'Participant'}</p>
@@ -208,7 +208,7 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
                 <>
                   <ParticipantView
                     participant={localParticipant}
-                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                    className="w-full h-48 bg-black rounded-lg border border-gray-700 [&_video]:w-full [&_video]:h-full [&_video]:object-contain"
                   />
                   <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
                     <p className="text-white text-xs">You</p>
