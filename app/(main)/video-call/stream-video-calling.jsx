@@ -7,16 +7,14 @@ import { toast } from "sonner";
 
 // Import Stream.io React SDK
 import {
-  StreamVideo,
-  StreamVideoClient,
-  StreamCall,
-  useCall,
-  useCallStateHooks,
-  ParticipantView,
-  CallingState,
-  type User,
-  type StreamVideoParticipant
-} from '@stream-io/video-react-sdk';
+	StreamVideo,
+	StreamVideoClient,
+	StreamCall,
+	useCall,
+	useCallStateHooks,
+	ParticipantView,
+	CallingState,
+} from "@stream-io/video-react-sdk";
 
 // Stream.io configuration
 const API_KEY = "kdpvyx9sdeqt";
@@ -220,8 +218,8 @@ export default function StreamVideoCalling({ callId, userId, userName }) {
       try {
         setIsInitializing(true);
         
-        // Create user object
-        const user: User = {
+		// Create user object
+		const user = {
           id: userId,
           name: userName,
           image: `https://getstream.io/random_svg/?id=${userId}&name=${encodeURIComponent(userName)}`,

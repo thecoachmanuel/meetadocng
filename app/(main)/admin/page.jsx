@@ -7,32 +7,34 @@ import { AnnouncementsPanel } from "./components/announcements";
 import { EnquiriesPanel } from "./components/enquiries";
 import { Leaderboards } from "./components/leaderboards";
 import { EscrowAppointments } from "./components/escrow-appointments";
+import PaymentsPanel from "./components/payments-panel";
 import { getSiteSettings } from "@/actions/site-settings";
-import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements, getProcessedPayouts } from "@/actions/admin";
+import { getNewUsers, getLeaderboards, getAnalytics, getContactMessages, getAnnouncements, getProcessedPayouts, getPayments } from "@/actions/admin";
 import AnalyticsPanel from "./analytics-panel";
 import SiteSettingsPanel from "./settings-panel";
 import CreditsConfig from "./credits-config";
 import {
-  getPendingDoctors,
-  getVerifiedDoctors,
-  getPendingPayouts,
-  getEscrowAppointments,
+	getPendingDoctors,
+	getVerifiedDoctors,
+	getPendingPayouts,
+	getEscrowAppointments,
 } from "@/actions/admin";
 
-export default async function AdminPage() {
-  const results = await Promise.allSettled([
-    getPendingDoctors(),
-    getVerifiedDoctors(),
-    getPendingPayouts(),
-    getNewUsers(),
-    getLeaderboards(),
-    getSiteSettings(),
-    getAnalytics(),
-    getEscrowAppointments(),
-    getContactMessages(),
-    getAnnouncements(),
-    getProcessedPayouts(),
-  ]);
+	export default async function AdminPage() {
+	  const results = await Promise.allSettled([
+		getPendingDoctors(),
+		getVerifiedDoctors(),
+		getPendingPayouts(),
+		getNewUsers(),
+		getLeaderboards(),
+		getSiteSettings(),
+		getAnalytics(),
+		getEscrowAppointments(),
+		getContactMessages(),
+		getAnnouncements(),
+		getProcessedPayouts(),
+		getPayments(),
+	  ]);
 
   const pendingDoctorsData =
     results[0].status === "fulfilled" && results[0].value
@@ -74,10 +76,14 @@ export default async function AdminPage() {
     results[9].status === "fulfilled" && results[9].value
       ? results[9].value
       : { announcements: [] };
-  const processedPayoutsData =
-    results[10].status === "fulfilled" && results[10].value
-      ? results[10].value
-      : { payouts: [] };
+	  const processedPayoutsData =
+		results[10].status === "fulfilled" && results[10].value
+		  ? results[10].value
+		  : { payouts: [] };
+	  const paymentsData =
+		results[11].status === "fulfilled" && results[11].value
+		  ? results[11].value
+		  : { payments: [] };
 
   return (
     <>
@@ -107,6 +113,10 @@ export default async function AdminPage() {
       <TabsContent value="leaderboards" className="border-none p-0">
         <Leaderboards patients={leadersData.patients || []} doctors={leadersData.doctors || []} />
       </TabsContent>
+
+		  <TabsContent value="payments" className="border-none p-0">
+			<PaymentsPanel payments={paymentsData.payments || []} />
+		  </TabsContent>
 
       <TabsContent value="settings" className="border-none p-0">
         <div className="space-y-6">

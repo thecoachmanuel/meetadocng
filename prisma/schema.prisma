@@ -123,6 +123,33 @@ enum TransactionType {
   ADMIN_ADJUSTMENT      // Manual adjustment by admin
 }
 
+model Payment {
+  id           String          @id @default(uuid())
+  userId       String?
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email        String?
+  reference    String?         @unique
+  amount       Int             // Stored in kobo (smallest currency unit)
+  currency     String          @default("NGN")
+  plan         String?
+  status       PaymentStatus   @default(PENDING)
+  provider     String          @default("PAYSTACK")
+  channel      String?
+  gatewayCode  String?
+  gatewayMessage String?
+  paidAt       DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([status, createdAt])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Payout {
   id              String        @id @default(uuid())
   doctorId        String

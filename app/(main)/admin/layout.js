@@ -26,6 +26,11 @@ const adminTabs = [
     icon: CreditCard,
   },
   {
+    value: "payments",
+    label: "Payments",
+    icon: CreditCard,
+  },
+  {
     value: "users",
     label: "Users",
     icon: Users,

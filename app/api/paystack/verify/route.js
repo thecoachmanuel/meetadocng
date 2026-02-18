@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { purchaseCredits } from "@/actions/credits";
+import { db } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -32,30 +33,77 @@ export async function POST(request) {
       return NextResponse.json({ error: "Failed to verify payment" }, { status: 502 });
     }
 
-    const payload = await verifyResponse.json();
-    const data = payload?.data;
+		const payload = await verifyResponse.json();
+		const data = payload?.data;
 
-    if (!data || data.status !== "success") {
-      return NextResponse.json({ error: "Payment not successful" }, { status: 400 });
-    }
+		const metadata = data?.metadata || {};
+		const userId = metadata.userId;
+		const plan = metadata.plan;
+		const amount = data?.amount;
+		const paidAt = data?.paid_at ? new Date(data.paid_at) : null;
+		const status = data?.status === "success" ? "SUCCESS" : "FAILED";
+		const referenceFromPaystack = data?.reference;
+		const channel = data?.channel;
+		const gatewayCode = data?.gateway_response || null;
+		const gatewayMessage = data?.message || data?.gateway_response || null;
 
-    const metadata = data.metadata || {};
-    const userId = metadata.userId;
-    const plan = metadata.plan;
+		try {
+			const existing = referenceFromPaystack
+				? await db.payment.findUnique({
+					where: { reference: referenceFromPaystack },
+				})
+				: null;
 
-    if (!userId || !plan) {
-      return NextResponse.json({ error: "Incomplete payment metadata" }, { status: 400 });
-    }
+			if (existing) {
+				await db.payment.update({
+					where: { id: existing.id },
+					data: {
+						status,
+						amount: typeof amount === "number" ? amount : existing.amount,
+						paidAt,
+						channel,
+						gatewayCode,
+						gatewayMessage,
+						plan: plan || existing.plan,
+						userId: userId || existing.userId,
+					},
+				});
+			} else {
+				await db.payment.create({
+					data: {
+						userId: userId || null,
+						email: data?.customer?.email || null,
+						amount: typeof amount === "number" ? amount : 0,
+						currency: (data?.currency || "NGN") ?? "NGN",
+						plan: plan || null,
+						status,
+						provider: "PAYSTACK",
+						reference: referenceFromPaystack || reference,
+						channel,
+						gatewayCode,
+						gatewayMessage,
+						paidAt,
+					},
+				});
+			}
+		} catch (e) {}
 
-    const result = await purchaseCredits(userId, plan);
+		if (status !== "SUCCESS") {
+			return NextResponse.json({ error: "Payment not successful" }, { status: 400 });
+		}
 
-    if (!result?.success) {
-      return NextResponse.json({ error: result?.error || "Failed to allocate credits" }, { status: 500 });
-    }
+		if (!userId || !plan) {
+			return NextResponse.json({ error: "Incomplete payment metadata" }, { status: 400 });
+		}
 
-    return NextResponse.json({ success: true });
+		const result = await purchaseCredits(userId, plan);
+
+		if (!result?.success) {
+			return NextResponse.json({ error: result?.error || "Failed to allocate credits" }, { status: 500 });
+		}
+
+		return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

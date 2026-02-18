@@ -22,11 +22,10 @@ export default function DoctorAppointmentsList({ appointments: initialAppointmen
   useEffect(() => {
     if (initialAppointments && Array.isArray(initialAppointments)) {
       setData({ appointments: initialAppointments });
-    } else {
-      fetchAppointments();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+	} else {
+		  fetchAppointments();
+		}
+	}, []);
 
   const appointments = data?.appointments || [];
 

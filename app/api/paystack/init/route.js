@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { db } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -47,10 +48,26 @@ export async function POST(request) {
 		const payload = await initResponse.json().catch(() => null);
 		const data = payload?.data;
 		const authorizationUrl = data?.authorization_url;
+		const reference = data?.reference;
 
 		if (!authorizationUrl) {
 			return NextResponse.json({ error: "Invalid payment response" }, { status: 500 });
 		}
+
+		try {
+			await db.payment.create({
+				data: {
+					userId,
+					email,
+					amount,
+					currency: "NGN",
+					plan,
+					status: "PENDING",
+					provider: "PAYSTACK",
+					reference,
+				},
+			});
+		} catch (e) {}
 
 		return NextResponse.json({ authorizationUrl });
 	} catch (e) {

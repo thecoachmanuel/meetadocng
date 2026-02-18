@@ -1056,3 +1056,31 @@ export async function refundAppointmentCredits(formData) {
     throw new Error(`Failed to refund appointment credits: ${error.message}`);
   }
 }
+
+export async function getPayments() {
+	const isAdmin = await verifyAdmin();
+	if (!isAdmin) throw new Error("Unauthorized");
+
+	try {
+		const payments = await db.payment.findMany({
+			include: {
+				user: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: 200,
+		});
+
+		return { payments };
+	} catch (error) {
+		console.error("Failed to fetch payments:", error);
+		throw new Error("Failed to fetch payments");
+	}
+}
