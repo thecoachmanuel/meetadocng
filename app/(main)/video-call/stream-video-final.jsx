@@ -167,8 +167,8 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
 	return (
 		<div className="w-full h-full flex flex-col">
       <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-white mb-2">Video Consultation</h1>
-        <p className="text-muted-foreground">Powered by Stream.io Professional Video</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Ongoing Video Consultation</h1>
+        <p className="text-muted-foreground">Powered by MeetADoc</p>
         <p className="text-sm text-emerald-400 mt-2">Connected as {userName}</p>
         <div className="mt-2">
           <span className="bg-emerald-600 text-white px-2 py-1 rounded text-xs">
