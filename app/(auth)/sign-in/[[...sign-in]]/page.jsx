@@ -26,8 +26,43 @@ export default function Page() {
       toast.error(error.message || "Failed to sign in");
       return;
     }
-    toast.success("Signed in successfully. Redirecting to your dashboard...");
-    window.location.href = "/";
+
+    try {
+      const session = data?.session;
+      let target = "/";
+
+      if (session?.access_token) {
+        const res = await fetch("/api/me", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ accessToken: session.access_token }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const u = json?.user;
+
+          if (u?.role === "ADMIN") {
+            target = "/admin";
+          } else if (u?.role === "DOCTOR") {
+            target = u.verificationStatus === "VERIFIED" ? "/doctor" : "/doctor/verification";
+          } else if (u?.role === "PATIENT") {
+            target = "/appointments";
+          } else if (u?.role === "UNASSIGNED") {
+            target = "/onboarding";
+          }
+        }
+      }
+
+      toast.success("Signed in successfully. Redirecting to your dashboard...");
+      window.location.href = target;
+    } catch {
+      toast.success("Signed in successfully. Redirecting to your dashboard...");
+      window.location.href = "/";
+    }
   };
 
   const signInGoogle = async () => {
