@@ -1,12 +1,9 @@
-import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Header from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSettings } from "@/lib/settings";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata() {
   const s = await getSettings();
@@ -25,7 +22,7 @@ export default async function RootLayout({ children }) {
       <head>
         <link rel="icon" href={s.faviconUrl || "/logo.png"} sizes="any" />
       </head>
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
+      <body className="min-h-screen flex flex-col">
         <ThemeProvider
           attribute="class"
           defaultTheme={s.theme || "dark"}
