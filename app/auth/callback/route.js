@@ -36,12 +36,12 @@ export async function GET(req) {
 
   const dbUser = await checkUser(authUser);
 
-  const role = dbUser?.role || "UNASSIGNED";
+  const role = dbUser?.role || "PATIENT";
   const redirectMap = {
     ADMIN: "/admin",
     DOCTOR: "/doctor",
     PATIENT: "/appointments",
-    UNASSIGNED: "/onboarding",
+    UNASSIGNED: "/appointments",
   };
   const target = redirectMap[role] || "/";
   res.headers.set("Location", new URL(target, siteUrl).toString());

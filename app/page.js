@@ -17,9 +17,9 @@ export default async function Home() {
 		ADMIN: "/admin",
 		DOCTOR: "/doctor",
 		PATIENT: "/appointments",
-		UNASSIGNED: "/onboarding",
+		UNASSIGNED: "/appointments",
 	};
-	const dashboardHref = role ? redirectMap[role] || "/" : null;
+	const dashboardHref = role ? redirectMap[role] || "/appointments" : null;
 	const authCtaHref = dashboardHref || "/sign-up";
 	const hs = s.homepageSections || {};
 	const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
