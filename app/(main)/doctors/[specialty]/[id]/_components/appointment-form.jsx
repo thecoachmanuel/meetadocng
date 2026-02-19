@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import useFetch from "@/hooks/use-fetch";
 
 import { formatNaira } from "@/lib/currency";
+import { supabaseClient } from "@/lib/supabase-client";
 
 export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate = 1000, appointmentCreditCost = 2 }) {
   const [description, setDescription] = useState("");
@@ -18,11 +19,9 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate 
   // Use the useFetch hook to handle loading, data, and error states
   const { loading, data, fn: submitBooking } = useFetch(bookAppointment);
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create form data
     const formData = new FormData();
     formData.append("doctorId", doctorId);
     if (slot.startTimeMs && slot.endTimeMs) {
@@ -34,7 +33,14 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete, nairaRate 
     }
     formData.append("description", description);
 
-    // Submit booking using the function from useFetch
+    try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (accessToken) {
+        formData.append("accessToken", accessToken);
+      }
+    } catch {}
+
     await submitBooking(formData);
   };
 

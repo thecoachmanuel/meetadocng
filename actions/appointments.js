@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
 import { deductCreditsForAppointment } from "@/actions/credits";
 import { addDays, addMinutes, format, isBefore, endOfDay } from "date-fns";
@@ -26,14 +27,29 @@ async function ensureStreamCall(callId, createdById) {
  * Book a new appointment with a doctor
  */
 export async function bookAppointment(formData) {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.getUser();
+  const rawToken = formData.get("accessToken");
+  let authUser = null;
 
-  if (error || !data?.user) {
-    throw new Error("Unauthorized");
+  if (typeof rawToken === "string" && rawToken.length > 0) {
+    try {
+      const adminClient = supabaseAdmin();
+      const { data: tokenData, error: tokenError } = await adminClient.auth.getUser(rawToken);
+      if (!tokenError && tokenData?.user) {
+        authUser = tokenData.user;
+      }
+    } catch {}
   }
 
-  const authUser = data.user;
+  if (!authUser) {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error || !data?.user) {
+      throw new Error("Unauthorized");
+    }
+
+    authUser = data.user;
+  }
 
   try {
     // Get the patient user, with fallback to email for legacy records
