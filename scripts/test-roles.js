@@ -28,15 +28,43 @@ async function signIn(email, password) {
 }
 
 async function main() {
-  loadEnv();
-  const db = new PrismaClient();
-  const patientSession = await signIn("patient@example.com", "test12345");
-  const doctorSession = await signIn("doctor@example.com", "doc12345");
-  const patient = await db.user.findUnique({ where: { email: "patient@example.com" } });
-  const doctor = await db.user.findUnique({ where: { email: "doctor@example.com" } });
-  console.log("patient", patient?.role);
-  console.log("doctor", doctor?.role);
-  await db.$disconnect();
+	loadEnv();
+	const db = new PrismaClient();
+	const baseUrl = "http://localhost:3000";
+	const patientSession = await signIn("patient@example.com", "test12345");
+	const doctorSession = await signIn("doctor@example.com", "doc12345");
+	const patient = await db.user.findUnique({ where: { email: "patient@example.com" } });
+	const doctor = await db.user.findUnique({ where: { email: "doctor@example.com" } });
+	console.log("db patient role", patient?.role);
+	console.log("db doctor role", doctor?.role);
+
+	const patientMeRes = await fetch(`${baseUrl}/api/me`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${patientSession.access_token}`,
+		},
+		body: JSON.stringify({ accessToken: patientSession.access_token }),
+	});
+	const patientMe = await patientMeRes.json();
+	console.log("/api/me patient", JSON.stringify(patientMe));
+
+	const doctorMeRes = await fetch(`${baseUrl}/api/me`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${doctorSession.access_token}`,
+		},
+		body: JSON.stringify({ accessToken: doctorSession.access_token }),
+	});
+	const doctorMe = await doctorMeRes.json();
+	console.log("/api/me doctor", JSON.stringify(doctorMe));
+
+	const targetEmail = "olaitanadewale@gmail.com";
+	const targetUser = await db.user.findUnique({ where: { email: targetEmail } });
+	console.log("db target user", targetEmail, JSON.stringify(targetUser));
+
+	await db.$disconnect();
 }
 
 main().catch((e) => {

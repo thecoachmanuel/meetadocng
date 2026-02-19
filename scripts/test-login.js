@@ -30,13 +30,15 @@ async function main() {
   const supabase = createClient(supabaseUrl, anonKey);
   const res = await supabase.auth.signInWithPassword({ email, password });
   if (res.error) throw res.error;
-  const { access_token, refresh_token } = res.data.session;
+  const { access_token } = res.data.session;
 
   const meRes = await fetch(`${baseUrl}/api/me`, {
     method: "POST",
     headers: {
-      Cookie: `sb:token=${access_token}; sb:refresh-token=${refresh_token}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
     },
+    body: JSON.stringify({ accessToken: access_token }),
   });
   const json = await meRes.json();
   console.log(JSON.stringify(json));
