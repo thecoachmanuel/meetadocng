@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
+import { checkUser } from "@/lib/checkUser";
 
 /**
  * Sets the user's role and related information
@@ -108,42 +109,5 @@ export async function setUserRole(formData) {
  * Gets the current user's complete profile information
  */
 export async function getCurrentUser() {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.getUser();
-  const authUser = data?.user;
-
-  if (error || !authUser) {
-    return null;
-  }
-
-  try {
-    let dbUser = await db.user.findUnique({
-      where: {
-        supabaseUserId: authUser.id,
-      },
-    });
-
-    if (!dbUser) {
-      const email = authUser.email || authUser.identities?.[0]?.email || "";
-      if (email) {
-        const byEmail = await db.user.findUnique({
-          where: { email },
-        });
-        if (byEmail) {
-          if (!byEmail.supabaseUserId) {
-            await db.user.update({
-              where: { email },
-              data: { supabaseUserId: authUser.id },
-            });
-          }
-          dbUser = byEmail;
-        }
-      }
-    }
-
-    return dbUser;
-  } catch (error) {
-    console.error("Failed to get user information:", error);
-    return null;
-  }
+	return checkUser();
 }

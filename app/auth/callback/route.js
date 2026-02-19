@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { db } from "@/lib/prisma";
+import { checkUser } from "@/lib/checkUser";
 
 export async function GET(req) {
   const url = new URL(req.url);
@@ -27,26 +27,15 @@ export async function GET(req) {
     return res;
   }
 
-  const { data, error: userError } = await supabase.auth.getUser();
-  const user = data?.user;
+	const { data, error: userError } = await supabase.auth.getUser();
+	const user = data?.user;
 
-  if (userError || !user) {
-    return res;
-  }
+	if (userError || !user) {
+		return res;
+	}
 
-  let dbUser = await db.user.findUnique({ where: { supabaseUserId: user.id } });
-  if (!dbUser) {
-    const email = user.email || user.identities?.[0]?.email || "";
-    if (email) {
-      const byEmail = await db.user.findUnique({ where: { email } });
-      if (byEmail) {
-        await db.user.update({ where: { email }, data: { supabaseUserId: user.id } });
-        dbUser = await db.user.findUnique({ where: { supabaseUserId: user.id } });
-      }
-    }
-  }
-
-  const role = dbUser?.role || "UNASSIGNED";
+	const dbUser = await checkUser(user);
+	const role = dbUser?.role || "UNASSIGNED";
   const redirectMap = {
     ADMIN: "/admin",
     DOCTOR: "/doctor",

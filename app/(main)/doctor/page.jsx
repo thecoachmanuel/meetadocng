@@ -10,21 +10,29 @@ import { getSettings } from "@/lib/settings";
 import { DoctorEarnings } from "./_components/doctor-earnings";
 
 export default async function DoctorDashboardPage() {
-  const user = await getCurrentUser();
+	const user = await getCurrentUser();
 
-  if (!user) {
-    redirect("/sign-in");
-  }
+	if (!user) {
+		redirect("/sign-in");
+	}
 
-  //   // Redirect if not a doctor
-  if (user?.role !== "DOCTOR") {
-    redirect("/onboarding");
-  }
+	if (user.role === "UNASSIGNED") {
+		redirect("/onboarding");
+	}
 
-  // If already verified, redirect to dashboard
-  if (user?.verificationStatus !== "VERIFIED") {
-    redirect("/doctor/verification");
-  }
+	if (user.role !== "DOCTOR") {
+		if (user.role === "PATIENT") {
+			redirect("/appointments");
+		}
+		if (user.role === "ADMIN") {
+			redirect("/admin");
+		}
+		redirect("/");
+	}
+
+	if (user.verificationStatus !== "VERIFIED") {
+		redirect("/doctor/verification");
+	}
 
   const results = await Promise.allSettled([
     getDoctorAppointments(),

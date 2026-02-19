@@ -32,8 +32,22 @@ export default async function PatientAppointmentsPage({ searchParams }) {
 		console.error("Failed to load current user:", e);
 	}
 
-	if (!user || user.role !== "PATIENT") {
+	if (!user) {
+		redirect("/sign-in");
+	}
+
+	if (user.role === "UNASSIGNED") {
 		redirect("/onboarding");
+	}
+
+	if (user.role !== "PATIENT") {
+		if (user.role === "DOCTOR") {
+			redirect("/doctor");
+		}
+		if (user.role === "ADMIN") {
+			redirect("/admin");
+		}
+		redirect("/");
 	}
 
 	let appointments = [];
