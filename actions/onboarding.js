@@ -141,26 +141,6 @@ export async function getCurrentUser() {
       }
     }
 
-    if (dbUser && dbUser.role === "UNASSIGNED") {
-      let newRole = null;
-
-      if (dbUser.specialty || dbUser.verificationStatus) {
-        newRole = "DOCTOR";
-      } else {
-        newRole = "PATIENT";
-      }
-
-      if (newRole) {
-        try {
-          await db.user.update({
-            where: { id: dbUser.id },
-            data: { role: newRole },
-          });
-          dbUser.role = newRole;
-        } catch {}
-      }
-    }
-
     return dbUser;
   } catch (error) {
     console.error("Failed to get user information:", error);

@@ -56,8 +56,8 @@ export default async function AdminLayout({ children }) {
   const profile = await getAdminProfile();
 
   if (!profile.isAdmin) {
-		redirect("/");
-
+    redirect("/onboarding");
+  }
 
   const tabsForRole = adminTabs.filter((tab) =>
     profile.isMainAdmin ? true : tab.value !== "roles",

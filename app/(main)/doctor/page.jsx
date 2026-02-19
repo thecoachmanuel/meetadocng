@@ -16,14 +16,9 @@ export default async function DoctorDashboardPage() {
     redirect("/sign-in");
   }
 
-  if (user.role !== "DOCTOR") {
-    if (user.role === "PATIENT") {
-      redirect("/appointments");
-    }
-    if (user.role === "ADMIN") {
-      redirect("/admin");
-    }
-    redirect("/");
+  //   // Redirect if not a doctor
+  if (user?.role !== "DOCTOR") {
+    redirect("/onboarding");
   }
 
   // If already verified, redirect to dashboard

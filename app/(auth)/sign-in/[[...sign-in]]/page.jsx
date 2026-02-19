@@ -35,12 +35,12 @@ export default function Page() {
       }
       const res = await fetch("/api/me", { method: "POST", headers });
       const body = await res.json();
-      const role = body?.user?.role || "PATIENT";
+      const role = body?.user?.role || "UNASSIGNED";
       const redirectMap = {
         ADMIN: "/admin",
         DOCTOR: "/doctor",
         PATIENT: "/appointments",
-        UNASSIGNED: "/appointments",
+        UNASSIGNED: "/onboarding",
       };
       window.location.href = redirectMap[role] || "/";
     } catch {
