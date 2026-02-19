@@ -27,29 +27,7 @@ export default function Page() {
       return;
     }
     toast.success("Signed in successfully. Redirecting to your dashboard...");
-    try {
-      const accessToken = data?.session?.access_token;
-      const headers = { "Content-Type": "application/json" };
-      if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
-      }
-      const res = await fetch("/api/me", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ accessToken }),
-      });
-      const body = await res.json();
-      const role = body?.user?.role || "UNASSIGNED";
-      const redirectMap = {
-        ADMIN: "/admin",
-        DOCTOR: "/doctor",
-        PATIENT: "/appointments",
-        UNASSIGNED: "/onboarding",
-      };
-      window.location.href = redirectMap[role] || "/";
-    } catch {
-      window.location.href = "/";
-    }
+    window.location.href = "/";
   };
 
   const signInGoogle = async () => {

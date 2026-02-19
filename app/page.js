@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,15 +13,25 @@ import { getSettings } from "@/lib/settings";
 export default async function Home() {
 	const [s, user] = await Promise.all([getSettings(), checkUser()]);
 
-	const role = user?.role;
-	const redirectMap = {
-		ADMIN: "/admin",
-		DOCTOR: "/doctor",
-		PATIENT: "/appointments",
-		UNASSIGNED: "/onboarding",
-	};
-	const dashboardHref = role ? redirectMap[role] || "/" : null;
-	const authCtaHref = dashboardHref || "/sign-up";
+	if (user) {
+		if (user.role === "ADMIN") {
+			redirect("/admin");
+		}
+		if (user.role === "DOCTOR") {
+			if (user.verificationStatus === "VERIFIED") {
+				redirect("/doctor");
+			}
+			redirect("/doctor/verification");
+		}
+		if (user.role === "PATIENT") {
+			redirect("/appointments");
+		}
+		if (user.role === "UNASSIGNED") {
+			redirect("/onboarding");
+		}
+	}
+
+	const authCtaHref = "/sign-up";
 	const hs = s.homepageSections || {};
 	const dynamicSections = Array.isArray(hs.features) ? hs.features : Array.isArray(hs) ? hs : [];
 	const heroFromSettings = hs.hero || {};
