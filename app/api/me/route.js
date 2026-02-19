@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkUser } from "@/lib/checkUser";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -22,17 +22,12 @@ export async function POST(request) {
     }
 
     if (token) {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const adminClient = supabaseAdmin();
+      const { data, error } = await adminClient.auth.getUser(token);
+      const authUser = data?.user;
 
-      if (url && anonKey) {
-        const client = createClient(url, anonKey);
-        const { data, error } = await client.auth.getUser(token);
-        const authUser = data?.user;
-
-        if (!error && authUser) {
-          user = await checkUser(authUser);
-        }
+      if (!error && authUser) {
+        user = await checkUser(authUser);
       }
     }
 
