@@ -190,7 +190,7 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
             <div className="absolute inset-0 flex items-center justify-center">
               <ParticipantView
                 participant={primaryRemote}
-                className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain [&_video]:object-center"
+                className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:!object-contain [&_video]:object-center bg-black"
               />
               <div className="absolute left-4 bottom-4 bg-black/60 rounded-full px-3 py-1">
                 <p className="text-white text-xs sm:text-sm font-medium">
@@ -220,9 +220,9 @@ function VideoCallUI({ userId, userName, callId, appointmentId, onLeave }) {
 									: "right-3 bottom-3 sm:right-4 sm:bottom-4"
 							} w-28 h-40 sm:w-32 sm:h-44 md:w-40 md:h-56 rounded-xl overflow-hidden border border-white/40 bg-black/70 shadow-lg`}
 						>
-              <ParticipantView
+            <ParticipantView
                 participant={localParticipant}
-                className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:object-contain [&_video]:object-center"
+                className="w-full h-full [&_video]:w-full [&_video]:h-full [&_video]:!object-contain [&_video]:object-center bg-black"
               />
               <div className="absolute left-2 bottom-2 bg-black/60 rounded-full px-2 py-1">
                 <p className="text-white text-[10px] sm:text-xs">You</p>
